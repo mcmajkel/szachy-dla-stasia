@@ -101,6 +101,9 @@ nav.bottom button.active{color:var(--accent);}
 .task-row .ttl b{display:block; font-size:16px;}
 .task-row .ttl span{font-size:13px; color:var(--muted);}
 .back-link{background:none; border:none; color:var(--accent); font-weight:700; font-size:16px; padding:8px 0 12px; display:flex; align-items:center; gap:6px;}
+.poziom-naglowek{display:flex; align-items:center; gap:8px; margin:16px 0 8px; font-size:16px;}
+.poziom-naglowek .tu-jestes{background:var(--accent); color:#fff; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px;}
+.poziom-naglowek .licznik{margin-left:auto; font-size:14px; color:var(--muted); font-weight:700;}
 
 /* ---- Board ---- */
 .board-wrap{display:flex; flex-direction:column; align-items:center; margin:6px 0 10px;}
@@ -229,6 +232,31 @@ nav.bottom button.active{color:var(--accent);}
 
 </div>
 
+<!-- ===== REJESTR PACZEK ZADAŃ =====
+     Musi być PRZED paczkami. Każda paczka wywołuje ZADANIA_PAKIET i sama się melduje.
+     Dodanie nowej porcji zadań = nowy plik w zadania/ + jedna linijka <script> niżej.
+     Szczegóły formatu: FORMAT-ZADAN.md -->
+<script>
+window.ZADANIA = [];
+window.PAKIETY = [];
+window.ZADANIA_PAKIET = function (pakiet) {
+  if (!pakiet || !pakiet.zadania) return;
+  window.PAKIETY.push({ id: pakiet.id, nazwa: pakiet.nazwa, wersja: pakiet.wersja, ile: pakiet.zadania.length });
+  pakiet.zadania.forEach(function (z) {
+    if (!z || !z.id || !z.fen) return;
+    if (z.poziom === undefined) z.poziom = 1;
+    window.ZADANIA.push(z);
+  });
+};
+</script>
+
+<script src="zadania/pakiet-00-start.js"></script>
+<script src="zadania/pakiet-01-mat-w-1.js"></script>
+<script src="zadania/pakiet-02-obrona.js"></script>
+<script src="zadania/pakiet-03-maty-techniczne.js"></script>
+<script src="zadania/pakiet-04-wiszace-bierki.js"></script>
+<script src="zadania/pakiet-05-widelce.js"></script>
+
 <script>
 "use strict";
 
@@ -257,71 +285,8 @@ function pieceSvg(ch){
 /* =========================================================
    DANE ZADAŃ
    ========================================================= */
-var ZADANIA = [
-  { id:"f1-01", faza:1, typ:"znajdz-wszystkie", orientacja:"black",
-    tytul:"Trzy sposoby obrony",
-    polecenie:"Białe dały szacha hetmanem. Znajdź WSZYSTKIE obrony.",
-    fen:"4k3/3r4/2n5/4Q3/8/8/8/6K1 b - - 0 1",
-    rozwiazania:["c6e5","d7e7","c6e7","e8d8","e8f8","e8f7"],
-    podpowiedz:"Zbij • Zasłoń • Ucieknij",
-    wyjasnienie:"Skoczek z c6 bije hetmana. Wieża z d7 (albo skoczek na e7) zasłania króla. Król może też uciec na d8, f8 lub f7." },
-
-  { id:"f1-02", faza:1, typ:"ruch", orientacja:"white",
-    tytul:"Mat na ostatniej linii",
-    polecenie:"Zamatuj w jednym ruchu.",
-    fen:"6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1",
-    rozwiazania:["a1a8"],
-    podpowiedz:"Król nie ma gdzie uciec — własne piony go blokują.",
-    wyjasnienie:"Wa8# — czarny król jest zamknięty przez własne piony f7, g7, h7." },
-
-  { id:"f1-03", faza:1, typ:"ruch", orientacja:"white",
-    tytul:"Hetman z królem",
-    polecenie:"Zamatuj w jednym ruchu.",
-    fen:"6k1/8/6K1/8/8/8/8/3Q4 w - - 0 1",
-    rozwiazania:["d1d8"],
-    podpowiedz:"Twój król już pilnuje pól ucieczki.",
-    wyjasnienie:"Hd8# — hetman kryje ósmą linię, a król z g6 odbiera f7, g7 i h7." },
-
-  { id:"f2-01", faza:2, typ:"ruch", orientacja:"white",
-    tytul:"Schody z dwóch wież",
-    polecenie:"Zamatuj w jednym ruchu.",
-    fen:"7K/8/8/8/8/1R6/R7/3k4 w - - 0 1",
-    rozwiazania:["b3b1"],
-    podpowiedz:"Jedna wieża już odcina drugą linię.",
-    wyjasnienie:"Wb1# — wieża z a2 trzyma drugą linię, druga wieża daje mata na pierwszej." },
-
-  { id:"f2-02", faza:2, typ:"ruch", orientacja:"white",
-    tytul:"Zamknij pudełko",
-    polecenie:"Nie dawaj szacha. Zamknij króla w mniejszym pudełku.",
-    fen:"8/8/8/4k3/8/8/8/3Q2K1 w - - 0 1",
-    rozwiazania:["d1d3"],
-    podpowiedz:"Postaw hetmana tam, gdzie skoczyłby skoczek stojący na polu czarnego króla.",
-    wyjasnienie:"Hd3 — z e5 skoczek skoczyłby na d3. Hetman odcina linię d i trzecią, król ma coraz mniej miejsca." },
-
-  { id:"f3-01", faza:3, typ:"ruch", orientacja:"white",
-    tytul:"Wisząca bierka",
-    polecenie:"Coś stoi bez obrony. Zbij to.",
-    fen:"6k1/5ppp/8/3n4/8/8/5PPP/3R2K1 w - - 0 1",
-    rozwiazania:["d1d5"],
-    podpowiedz:"Sprawdź, czy skoczka ktoś broni.",
-    wyjasnienie:"Wxd5 — skoczka nie broni żadna czarna bierka." },
-
-  { id:"f4-01", faza:4, typ:"ruch", orientacja:"white",
-    tytul:"Widelec skoczkiem",
-    polecenie:"Jeden ruch skoczka atakuje króla i wieżę naraz.",
-    fen:"5r2/2k5/8/6N1/8/8/8/K7 w - - 0 1",
-    rozwiazania:["g5e6"],
-    podpowiedz:"Szukaj pola, z którego skoczek widzi c7 i f8.",
-    wyjasnienie:"Se6+ — król musi uciec z szacha, więc po jego ruchu Sxf8 zabiera wieżę." },
-
-  { id:"f4-02", faza:4, typ:"wskaz-pole", orientacja:"white",
-    tytul:"Związanie",
-    polecenie:"Dotknij skoczka, który jest związany.",
-    fen:"3qk3/8/5n2/6B1/8/8/8/4K3 w - - 0 1",
-    rozwiazania:["f6"],
-    podpowiedz:"Popatrz na przekątną gońca.",
-    wyjasnienie:"Skoczek z f6 stoi na przekątnej g5–d8. Jak się ruszy, goniec zbije hetmana." }
-];
+var ZADANIA = window.ZADANIA || [];
+var PAKIETY = window.PAKIETY || [];
 
 var FAZY = [
   {id:1, nazwa:"Mat w jednym ruchu", ikona:"🏆"},
@@ -332,6 +297,9 @@ var FAZY = [
 ];
 
 var TEMAT_LICHESS = {1:["mateIn1"],2:["mateIn1"],3:["hangingPiece"],4:["fork","pin"],5:["mateIn2"]};
+
+// ile zadań pokazać na liście fazy (reszta pod "Pokaż więcej")
+var POKAZ_LIMIT = {};
 
 /* =========================================================
    FEN <-> plansza
@@ -988,34 +956,61 @@ document.querySelectorAll("nav.bottom button").forEach(function(btn){
 /* =========================================================
    EKRAN „DZIŚ"
    ========================================================= */
+function rozwiazane(id){ return !!(STATE.zadania[id] && STATE.zadania[id].rozwiazane); }
+function czysto(id){ return !!(STATE.zadania[id] && STATE.zadania[id].pierwszaProbaOK); }
+
+/**
+ * Aktualny poziom trudności w danej fazie.
+ * Poprzeczka idzie w górę dopiero, gdy dziecko ma opanowany obecny poziom:
+ * min. 6 rozwiązanych i 80% z nich za pierwszym razem bez podpowiedzi.
+ * Bez tego 6-latek dostawałby zadania ponad swój poziom i się zniechęcał.
+ */
+function poziomDlaFazy(faza){
+  for(var p=1; p<3; p++){
+    var wPoziomie = tasksByFaza(faza).filter(function(z){ return z.poziom===p; });
+    if(wPoziomie.length===0) continue;
+    var zrobione = wPoziomie.filter(function(z){ return rozwiazane(z.id); });
+    var bezBledu = wPoziomie.filter(function(z){ return czysto(z.id); });
+    var opanowany = zrobione.length>=6 && bezBledu.length/zrobione.length>=0.8;
+    var wyczerpany = zrobione.length===wPoziomie.length;
+    if(!opanowany && !wyczerpany) return p;
+  }
+  return 3;
+}
+
 function pickDailyQueue(){
   var faza = STATE.odblokowanaFaza;
-  var longAbsence = isLongAbsence();
-  var pool = [];
-  if(longAbsence){
-    pool = ZADANIA.filter(function(z){ return STATE.zadania[z.id] && STATE.zadania[z.id].rozwiazane; });
-    shuffle(pool);
-    return pool.slice(0,5).map(function(z){ return z.id; });
+
+  // Po dłuższej przerwie: sama powtórka z rzeczy już umianych (łagodny powrót)
+  if(isLongAbsence()){
+    var znane = ZADANIA.filter(function(z){ return rozwiazane(z.id); });
+    shuffle(znane);
+    if(znane.length>=3) return znane.slice(0,5).map(function(z){ return z.id; });
   }
-  var current = tasksByFaza(faza);
-  var unsolved = current.filter(function(z){ return !(STATE.zadania[z.id]&&STATE.zadania[z.id].rozwiazane); });
-  var solved = current.filter(function(z){ return STATE.zadania[z.id]&&STATE.zadania[z.id].rozwiazane; });
-  var picks = unsolved.concat(solved);
+
+  var poziom = poziomDlaFazy(faza);
+  var wFazie = tasksByFaza(faza);
+
+  // najpierw nierozwiązane z bieżącego poziomu, potem z sąsiednich
+  var nowe = shuffle(wFazie.filter(function(z){ return z.poziom===poziom && !rozwiazane(z.id); }));
+  var zapas = shuffle(wFazie.filter(function(z){ return z.poziom!==poziom && !rozwiazane(z.id); }));
+  var picks = nowe.concat(zapas).slice(0,5);
+
+  // gdy w fazie nie ma już nic nowego — dobierz powtórki z tej fazy
   if(picks.length<5){
-    for(var f=faza-1; f>=1 && picks.length<5; f--){
-      picks = picks.concat(tasksByFaza(f));
-    }
+    picks = picks.concat(shuffle(wFazie.filter(function(z){ return rozwiazane(z.id); })).slice(0,5-picks.length));
   }
-  picks = picks.slice(0,5).map(function(z){ return z.id; });
-  // 1 powtórka z wcześniejszej fazy
-  var earlierSolved = ZADANIA.filter(function(z){
-    return z.faza<faza && STATE.zadania[z.id] && STATE.zadania[z.id].rozwiazane;
+  var ids = picks.map(function(z){ return z.id; });
+
+  // +1 powtórka: najdawniej robione zadanie z wcześniejszych faz (prosty spaced repetition)
+  var starsze = ZADANIA.filter(function(z){
+    return z.faza<faza && z.faza>0 && rozwiazane(z.id);
+  }).sort(function(a,b){
+    return (STATE.zadania[a.id].data||"").localeCompare(STATE.zadania[b.id].data||"");
   });
-  if(earlierSolved.length>0){
-    var pick = earlierSolved[Math.floor(Math.random()*earlierSolved.length)];
-    picks.push(pick.id);
-  }
-  return picks;
+  if(starsze.length>0) ids.push(starsze[0].id);
+
+  return ids;
 }
 function shuffle(arr){
   for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
@@ -1101,16 +1096,45 @@ function openFazaList(fazaId){
   var tasks = tasksByFaza(fazaId);
   var html = '<button class="back-link" id="backToFazy">← Wróć do faz</button>';
   html += '<h2>'+faza.ikona+' '+faza.nazwa+'</h2>';
-  tasks.forEach(function(t){
-    var rec = STATE.zadania[t.id];
-    var icon = "⬜";
-    if(rec && rec.rozwiazane){ icon = rec.pierwszaProbaOK ? "🌟" : "⭐"; }
-    html += '<button class="task-row" data-task="'+t.id+'" style="border:none;">';
-    html += '<span class="stateicon">'+icon+'</span>';
-    html += '<span class="ttl"><b>'+taskIcon(t)+' '+t.tytul+'</b><span>'+t.polecenie+'</span></span>';
-    html += '</button>';
+
+  // Przy 100 zadaniach w fazie płaska lista jest nie do przejścia —
+  // grupujemy po poziomie i pokazujemy tylko kawałek, z dociąganiem.
+  var NAZWY_POZIOMU = {1:"Łatwe", 2:"Średnie", 3:"Trudniejsze"};
+  var aktualny = poziomDlaFazy(fazaId);
+  var limit = POKAZ_LIMIT[fazaId] || 12;
+  var pokazane = 0, zostalo = 0;
+
+  [1,2,3].forEach(function(p){
+    var wPoziomie = tasks.filter(function(t){ return (t.poziom||1)===p; });
+    if(!wPoziomie.length) return;
+    var zrobione = wPoziomie.filter(function(t){ return rozwiazane(t.id); }).length;
+    html += '<div class="poziom-naglowek">'+
+              '<b>'+NAZWY_POZIOMU[p]+'</b>'+
+              (p===aktualny ? '<span class="tu-jestes">tu jesteś</span>' : '')+
+              '<span class="licznik">'+zrobione+'/'+wPoziomie.length+'</span>'+
+            '</div>';
+    wPoziomie.forEach(function(t){
+      if(pokazane>=limit){ zostalo++; return; }
+      pokazane++;
+      var rec = STATE.zadania[t.id];
+      var icon = "⬜";
+      if(rec && rec.rozwiazane){ icon = rec.pierwszaProbaOK ? "🌟" : "⭐"; }
+      html += '<button class="task-row" data-task="'+t.id+'" style="border:none;">';
+      html += '<span class="stateicon">'+icon+'</span>';
+      html += '<span class="ttl"><b>'+taskIcon(t)+' '+t.tytul+'</b><span>'+t.polecenie+'</span></span>';
+      html += '</button>';
+    });
   });
+
+  if(zostalo>0){
+    html += '<button class="btn btn-outline" id="pokazWiecej" style="width:100%;">⬇️ Pokaż więcej ('+zostalo+')</button>';
+  }
   scr.innerHTML = html;
+  var wiecej = document.getElementById("pokazWiecej");
+  if(wiecej) wiecej.addEventListener("click", function(){
+    POKAZ_LIMIT[fazaId] = limit + 20;
+    openFazaList(fazaId);
+  });
   document.getElementById("backToFazy").addEventListener("click", function(){ showScreen("zadania"); renderZadania(); });
   scr.querySelectorAll(".task-row").forEach(function(btn){
     btn.addEventListener("click", function(){ openTask(btn.getAttribute("data-task"), null); });

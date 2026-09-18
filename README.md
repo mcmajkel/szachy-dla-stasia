@@ -34,23 +34,40 @@ Przytrzymaj logo na górze przez 3 sekundy **albo** kliknij „Panel rodzica" w 
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
 - **Offline-first** — zadania działają bez internetu, sieci wymaga tylko zakładka „Graj"
 
+## 📚 Zadania
+
+**286 zadań**, wszystkie zweryfikowane silnikiem szachowym, w paczkach w katalogu `zadania/`:
+
+| Paczka | Zadań | Faza |
+|---|---|---|
+| Zestaw startowy | 8 | 1–4 |
+| Mat w jednym ruchu | 100 | 1 |
+| Obrona przed szachem | 30 | 1 |
+| Maty techniczne | 50 | 2 |
+| Wiszące bierki | 50 | 3 |
+| Widelce skoczkiem | 48 | 4 |
+
+Każde ma `poziom` 1–3. Aplikacja podnosi poprzeczkę dopiero, gdy dziecko opanuje obecny poziom (≥ 6 rozwiązanych, ≥ 80% za pierwszym razem bez podpowiedzi).
+
+Skąd taki, a nie inny dobór — [RESEARCH-I-PROGRAM.md](RESEARCH-I-PROGRAM.md).
+
 ## ➕ Dodawanie zadań
 
-Zadania to tablica `ZADANIA` na górze skryptu w `index.html`. Nowe dopisuje się bez dotykania reszty kodu:
+Pełna specyfikacja: **[FORMAT-ZADAN.md](FORMAT-ZADAN.md)**. W skrócie:
 
-```js
-{ id:"f2-03", faza:2, typ:"ruch", orientacja:"white",
-  tytul:"Tytuł zadania",
-  polecenie:"Zamatuj w jednym ruchu.",
-  fen:"6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1",
-  rozwiazania:["a1a8"],
-  podpowiedz:"Krótka podpowiedź.",
-  wyjasnienie:"Co się właściwie stało i dlaczego." }
+```bash
+cd tools && npm install     # raz
+node tools/generuj.js       # tworzy paczki
+node tools/waliduj.js       # musi dać "bledow: 0"
 ```
 
-Typy zadań: `ruch` (tap figura → tap pole), `znajdz-wszystkie` (licznik „znaleziono 2/6"), `wskaz-pole` (jeden tap w pole).
+Potem jedna linijka w `index.html`:
 
-⚠️ **`rozwiazania` musi być kompletne.** Aplikacja nie zna zasad szachów — porównuje tylko stringi. Jeśli pominiesz legalną odpowiedź, dziecko dostanie „spróbuj jeszcze raz" za dobry ruch. Warto wkleić FEN do `lichess.org/analysis` i sprawdzić, czy nie ma innych rozwiązań.
+```html
+<script src="zadania/pakiet-07-nowa.js"></script>
+```
+
+⚠️ **Nie pisz `rozwiazania` ręcznie.** Aplikacja nie zna zasad szachów — porównuje stringi. Pominięta legalna odpowiedź = dziecko dostaje „spróbuj jeszcze raz" za dobry ruch. Tak było z pierwszym zadaniem w tym repo: miało wpisane 4 obrony przed szachem, a legalnych było 6. Dlatego rozwiązania liczy silnik.
 
 ## 📱 Uruchomienie lokalne
 
