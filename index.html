@@ -205,6 +205,74 @@ nav.bottom button.active{color:var(--accent);}
 
 .icon-btn-row{display:flex; gap:10px; margin-top:10px;}
 .attrib{font-size:11px; color:var(--muted); text-align:center; margin-top:20px;}
+
+/* =========================================================
+   TABLET / iPad
+   Telefon dostaje kolumnę 600 px. Na iPadzie wyglądałoby to jak
+   rozciągnięta aplikacja telefoniczna, a w orientacji poziomej
+   plansza (480 px) + nagłówek + pasek nie mieszczą się w wysokości.
+   ========================================================= */
+
+/* --- iPad pionowo: szersza kolumna i większa plansza --- */
+@media (min-width: 700px){
+  body{font-size:18px;}
+  #app, nav.bottom, .explain-sheet{max-width:760px;}
+  header.top h1{font-size:24px;}
+  header.top .logo{font-size:34px;}
+  main{padding:12px 24px 24px; padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+  .board{width:min(100vw - 48px, 560px);}
+  .task-head .txt b{font-size:19px;}
+  .faza-tile .info b, .task-row .ttl b{font-size:18px;}
+  nav.bottom button{font-size:14px; min-height:66px;}
+  nav.bottom button .ic{font-size:27px;}
+  .stat-grid{grid-template-columns:repeat(4,1fr);}
+  .embed-wrap{max-width:560px; margin:0 auto;}
+}
+
+/* --- iPad poziomo: plansza obok treści zadania ---
+   W poziomie wysokości jest mało (768 px), więc układ jednokolumnowy
+   wymuszałby scrollowanie przy każdym zadaniu. */
+@media (min-width: 900px) and (orientation: landscape){
+  #app, nav.bottom{max-width:1000px;}
+  /* okno wyjaśnienia wąskie — 1000 px daje za długie linijki do czytania */
+  .explain-sheet{max-width:640px;}
+
+  #screen-task{
+    display:grid;
+    grid-template-columns:auto minmax(260px, 1fr);
+    column-gap:28px;
+    align-items:start;
+  }
+  #screen-task .back-link{grid-column:1 / -1;}
+  #screen-task .board-wrap{grid-column:1; grid-row:2 / span 4; margin:0;}
+  #screen-task .task-head,
+  #screen-task .counter-wrap,
+  #screen-task .status-line,
+  #screen-task .hint-area{grid-column:2;}
+  #screen-task .task-head{margin-top:0;}
+
+  /* Plansza ograniczona wysokością okna, nie szerokością.
+     215px to nagłówek + „Wróć" + dolny pasek + marginesy — bez tego
+     plansza chowa się pod nawigacją. */
+  .board{width:min(100vh - 215px, 100vw - 360px, 620px);}
+
+  /* arkusz wyjaśnienia jako okno na środku, nie pasek z dołu */
+  .explain-overlay{align-items:center;}
+  .explain-sheet{border-radius:20px; max-height:80vh;}
+
+  .embed-wrap{max-width:min(70vh, 560px); margin:0 auto;}
+}
+
+/* --- bardzo niskie okno (podzielony ekran, przeglądarka w małym oknie) --- */
+@media (max-height: 560px){
+  .board{width:min(100vh - 190px, 100vw - 32px, 420px);}
+  header.top{padding:6px 16px 2px;}
+  header.top h1{font-size:17px;}
+  header.top .logo{font-size:22px;}
+  nav.bottom button{min-height:52px; font-size:12px;}
+  nav.bottom button .ic{font-size:20px;}
+  main{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+}
 </style>
 </head>
 <body>
@@ -746,6 +814,7 @@ function openTask(taskId, session){
   if(readBtn) readBtn.addEventListener("click", function(){ speak(task.polecenie); });
 
   var counterWrap = document.createElement("div");
+  counterWrap.className = "counter-wrap";
   counterWrap.style.textAlign = "center";
   scr.appendChild(counterWrap);
 
@@ -758,6 +827,7 @@ function openTask(taskId, session){
   scr.appendChild(statusLine);
 
   var hintArea = document.createElement("div");
+  hintArea.className = "hint-area";
   scr.appendChild(hintArea);
 
   // stan sesji zadania

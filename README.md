@@ -31,6 +31,7 @@ Przytrzymaj logo na górze przez 3 sekundy **albo** kliknij „Panel rodzica" w 
 - **Bez bibliotek szachowych** — walidacja przez porównanie ruchu w notacji UCI z listą rozwiązań
 - **Figury jako własne SVG** — Unicode ♔♕♖ renderuje się niespójnie na Androidzie i iOS
 - **Interakcja tap-tap, nie drag** — drag na telefonie koliduje ze scrollem strony
+- **Telefon, iPad i desktop** — na iPadzie poziomo plansza i treść zadania stoją obok siebie, żeby nic nie trzeba było przewijać
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
 - **Offline-first** — zadania działają bez internetu, sieci wymaga tylko zakładka „Graj"
 
