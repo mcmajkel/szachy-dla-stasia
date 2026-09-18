@@ -6,6 +6,8 @@ Hub do nauki szachów dla 6-latka. Jeden plik HTML, bez logowania, bez reklam, b
 
 **[szachy-dla-stasia →](https://mcmajkel.github.io/szachy-dla-stasia/)**
 
+Krótki adres do wpisania na telefonie: **[tinyurl.com/stasioszachy](https://tinyurl.com/stasioszachy)**
+
 Na telefonie warto dodać stronę do ekranu początkowego („Udostępnij" → „Dodaj do ekranu początkowego") — wtedy odpala się jak aplikacja, bez paska przeglądarki.
 
 ## 🧩 Co to robi
