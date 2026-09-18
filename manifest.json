@@ -1,0 +1,11 @@
+{
+  "name": "Szachy dla Stasia",
+  "short_name": "Szachy",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFF8EE",
+  "theme_color": "#B88762",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

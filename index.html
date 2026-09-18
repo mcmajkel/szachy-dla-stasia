@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Szachy dla Stasia</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Szachy">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#B88762">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --jasne:#EDD6B0; --ciemne:#B88762; --board-border:#7a5233;
+  --bg:#FFF8EE; --ink:#2a2a2a; --accent:#3a7d44; --accent2:#c0392b;
+  --card:#ffffff; --muted:#8a7a68; --gold:#e0a72e;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:17px; line-height:1.4;
+  overscroll-behavior-y:none;
+}
+button{font-family:inherit; font-size:16px; cursor:pointer;}
+h1,h2,h3{margin:0 0 8px;}
+p{margin:0 0 10px;}
+#app{display:flex; flex-direction:column; min-height:100vh; max-width:600px; margin:0 auto; position:relative;}
+header.top{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:14px 16px 8px; user-select:none;
+}
+header.top .logo{font-size:28px;}
+header.top h1{font-size:20px;}
+main{flex:1; padding:8px 16px 24px; padding-bottom:calc(88px + env(safe-area-inset-bottom));}
+.screen{display:none;}
+.screen.active{display:block;}
+
+nav.bottom{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  max-width:600px; margin:0 auto;
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--card); border-top:2px solid #e8ddc8;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav.bottom button{
+  background:none; border:none; padding:10px 4px 8px; min-height:60px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  color:var(--muted); font-weight:600; font-size:13px;
+}
+nav.bottom button .ic{font-size:24px;}
+nav.bottom button.active{color:var(--accent);}
+
+.card{background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:none; border-radius:14px; padding:14px 20px; font-weight:700; font-size:17px;
+  min-height:48px;
+}
+.btn-primary{background:var(--accent); color:#fff; width:100%;}
+.btn-secondary{background:#eee0c9; color:var(--ink); width:100%;}
+.btn-outline{background:#fff; color:var(--accent); border:2px solid var(--accent);}
+.btn:active{transform:scale(0.97);}
+.btn[disabled]{opacity:.5;}
+
+/* ---- Dziś ---- */
+.streak-pill{
+  display:inline-flex; align-items:center; gap:6px; background:#fff3d6; color:#a5680b;
+  padding:8px 14px; border-radius:999px; font-weight:700; margin:0 auto 14px; width:fit-content;
+}
+.start-wrap{text-align:center; padding:20px 0;}
+.start-wrap .big{font-size:40px; margin-bottom:6px;}
+
+/* ---- Zadania / Fazy ---- */
+.faza-tile{
+  display:flex; align-items:center; gap:14px; padding:16px; border-radius:16px;
+  background:var(--card); margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.faza-tile.locked{opacity:.55;}
+.faza-tile .num{
+  width:44px; height:44px; border-radius:50%; background:var(--jasne); color:var(--board-border);
+  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;
+}
+.faza-tile .info{flex:1;}
+.faza-tile .info b{display:block; font-size:16px;}
+.faza-tile .info span{font-size:14px; color:var(--muted);}
+.faza-tile .lock{font-size:22px;}
+.progress-bar{height:8px; border-radius:5px; background:#eee0c9; margin-top:6px; overflow:hidden;}
+.progress-bar > div{height:100%; background:var(--accent);}
+
+.task-row{
+  display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px;
+  background:var(--card); margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+  border:none; width:100%; text-align:left;
+}
+.task-row .stateicon{font-size:22px; width:30px; text-align:center; flex-shrink:0;}
+.task-row .ttl{flex:1;}
+.task-row .ttl b{display:block; font-size:16px;}
+.task-row .ttl span{font-size:13px; color:var(--muted);}
+.back-link{background:none; border:none; color:var(--accent); font-weight:700; font-size:16px; padding:8px 0 12px; display:flex; align-items:center; gap:6px;}
+
+/* ---- Board ---- */
+.board-wrap{display:flex; flex-direction:column; align-items:center; margin:6px 0 10px;}
+.board{
+  width:min(100vw - 32px, 480px); aspect-ratio:1; position:relative;
+  border:5px solid var(--board-border); border-radius:6px; touch-action:manipulation;
+  background:var(--jasne);
+}
+.board-grid{
+  position:absolute; inset:0; display:grid;
+  grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
+}
+.sq{position:relative; display:block; border:none; padding:0; margin:0;}
+.sq.light{background:var(--jasne);}
+.sq.dark{background:var(--ciemne);}
+.sq.sel{outline:4px solid #f6d743; outline-offset:-4px; z-index:2;}
+.sq.ok{background:#8fce7a !important;}
+.sq.bad{background:#e28b7f !important;}
+.sq.hint-target{outline:3px dashed #f6d743; outline-offset:-3px;}
+.sq .coord{position:absolute; font-size:10px; font-weight:700; opacity:.55; pointer-events:none; user-select:none;}
+.sq .coord.file{bottom:2px; right:3px;}
+.sq .coord.rank{top:2px; left:3px;}
+.sq.light .coord{color:var(--board-border);}
+.sq.dark .coord{color:var(--jasne);}
+
+.pieces-layer{position:absolute; inset:0; pointer-events:none; z-index:3;}
+.piece{
+  position:absolute; width:12.5%; height:12.5%; padding:1.2%;
+  transition:left .15s ease, top .15s ease; will-change:left,top;
+}
+.piece svg{width:100%; height:100%; display:block;}
+
+.task-head{display:flex; align-items:flex-start; gap:10px; margin-bottom:8px;}
+.task-head .ic{font-size:28px; flex-shrink:0;}
+.task-head .txt{flex:1;}
+.task-head .txt b{font-size:17px; display:block;}
+.readbtn{background:#eee0c9; border:none; border-radius:10px; width:40px; height:40px; font-size:18px; flex-shrink:0;}
+
+.hint-box{background:#fff3d6; border-radius:12px; padding:12px; margin:8px 0; font-size:15px;}
+.status-line{text-align:center; font-weight:700; margin:6px 0; min-height:22px;}
+.status-line.ok{color:var(--accent);}
+.status-line.bad{color:var(--accent2);}
+.counter-pill{display:inline-block; background:#eee0c9; padding:4px 12px; border-radius:999px; font-weight:700; font-size:14px; margin-bottom:6px;}
+
+.explain-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.explain-sheet{
+  background:#fff; width:100%; max-width:600px; border-radius:20px 20px 0 0;
+  padding:20px; max-height:88vh; overflow-y:auto; text-align:center;
+}
+.explain-sheet .big-ok{font-size:44px; margin-bottom:6px;}
+.explain-sheet p{font-size:17px; text-align:left; background:#f6f0e2; border-radius:12px; padding:12px;}
+.explain-sheet .actions{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+
+/* ---- Graj ---- */
+.play-link{
+  display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px;
+  background:var(--card); margin-bottom:10px; text-decoration:none; color:var(--ink);
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+.play-link .ic{font-size:24px;}
+.play-link b{display:block; font-size:16px;}
+.play-link span{font-size:13px; color:var(--muted);}
+.offline-banner{background:#f6d3c9; color:#7a2b16; padding:12px 14px; border-radius:12px; font-weight:700; text-align:center; margin-bottom:14px;}
+.embed-wrap iframe{width:100%; aspect-ratio:1/1.1; border:none; border-radius:12px; background:#eee;}
+.net-note{font-size:13px; color:var(--muted); text-align:center; margin-top:4px;}
+
+/* ---- Moje ---- */
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;}
+.stat-box{background:var(--card); border-radius:16px; padding:16px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.stat-box .n{font-size:26px; font-weight:800;}
+.stat-box .l{font-size:13px; color:var(--muted);}
+.faza-mini{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+.faza-mini .lbl{width:70px; font-size:14px; font-weight:700; flex-shrink:0;}
+.faza-mini .progress-bar{flex:1; margin:0;}
+.faza-mini .pct{width:40px; text-align:right; font-size:13px; color:var(--muted);}
+
+.toggle-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0;}
+.switch{position:relative; width:48px; height:28px; background:#ddd; border-radius:999px; border:none; flex-shrink:0;}
+.switch.on{background:var(--accent);}
+.switch .knob{position:absolute; top:3px; left:3px; width:22px; height:22px; background:#fff; border-radius:50%; transition:left .15s;}
+.switch.on .knob{left:23px;}
+
+.gate-modal, .parent-modal{
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.gate-card, .parent-card{background:#fff; border-radius:18px; padding:22px; width:100%; max-width:420px; max-height:86vh; overflow-y:auto;}
+.gate-card input, .parent-card input, .parent-card textarea{
+  width:100%; padding:12px; font-size:16px; border:2px solid #ddd; border-radius:10px; margin:10px 0;
+}
+.parent-card table{width:100%; border-collapse:collapse; font-size:13px; margin:10px 0;}
+.parent-card th, .parent-card td{border-bottom:1px solid #eee; padding:6px 4px; text-align:left;}
+.close-x{float:right; background:none; border:none; font-size:22px; color:var(--muted);}
+.slider{width:100%;}
+.small-muted{font-size:13px; color:var(--muted);}
+
+.icon-btn-row{display:flex; gap:10px; margin-top:10px;}
+.attrib{font-size:11px; color:var(--muted); text-align:center; margin-top:20px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top" id="logoHold">
+    <span class="logo">♟️</span>
+    <h1>Szachy dla Stasia</h1>
+  </header>
+
+  <main>
+    <section class="screen" id="screen-dzis"></section>
+    <section class="screen" id="screen-zadania"></section>
+    <section class="screen" id="screen-graj"></section>
+    <section class="screen" id="screen-moje"></section>
+    <section class="screen" id="screen-task"></section>
+  </main>
+
+  <nav class="bottom">
+    <button data-tab="dzis" class="active"><span class="ic">🎯</span>Dziś</button>
+    <button data-tab="zadania"><span class="ic">🧩</span>Zadania</button>
+    <button data-tab="graj"><span class="ic">♟️</span>Graj</button>
+    <button data-tab="moje"><span class="ic">⭐</span>Moje</button>
+  </nav>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   FIGURY — własne proste kształty SVG (nie Cburnett, brak licencji do podania)
+   viewBox 0 0 100 100
+   ========================================================= */
+var PIECE_SHAPES = {
+  p: '<circle cx="50" cy="30" r="13"/><path d="M38,46 C38,60 30,66 30,78 L70,78 C70,66 62,60 62,46 Z"/><rect x="24" y="78" width="52" height="10" rx="3"/>',
+  r: '<rect x="22" y="18" width="12" height="13"/><rect x="44" y="18" width="12" height="13"/><rect x="66" y="18" width="12" height="13"/><rect x="22" y="30" width="56" height="7"/><path d="M30,37 L70,37 L66,74 L34,74 Z"/><rect x="22" y="74" width="56" height="10" rx="3"/>',
+  n: '<path d="M22,84 L22,72 Q22,62 30,57 Q26,52 28,44 Q30,36 38,30 Q44,22 54,22 Q64,22 68,30 Q70,34 66,36 Q62,32 56,32 Q60,36 58,40 Q66,40 70,46 Q74,52 70,56 Q66,52 60,52 Q62,58 58,62 Q64,64 66,70 Q68,76 64,84 Z"/><circle cx="44" cy="36" r="2.6" class="eye"/><rect x="20" y="84" width="52" height="8" rx="3"/>',
+  b: '<circle cx="50" cy="17" r="6"/><path d="M50,24 C35,30 32,50 40,66 C34,70 30,74 26,78 L74,78 C70,74 66,70 60,66 C68,50 65,30 50,24 Z"/><line x1="43" y1="33" x2="57" y2="45" class="slit"/><rect x="24" y="78" width="52" height="10" rx="3"/>',
+  q: '<circle cx="24" cy="22" r="5"/><circle cx="38" cy="16" r="5"/><circle cx="50" cy="13" r="5"/><circle cx="62" cy="16" r="5"/><circle cx="76" cy="22" r="5"/><path d="M22,28 L30,54 L38,32 L46,54 L50,34 L54,54 L62,32 L70,54 L78,28 L74,62 Q50,70 26,62 Z"/><path d="M27,60 C30,68 30,72 34,78 L66,78 C70,72 70,68 73,60 Z"/><rect x="22" y="78" width="56" height="10" rx="3"/>',
+  k: '<rect x="47" y="8" width="6" height="16"/><rect x="41" y="14" width="18" height="6"/><circle cx="50" cy="32" r="9"/><path d="M36,40 C30,50 28,60 32,70 C28,72 26,76 24,82 L76,82 C74,76 72,72 68,70 C72,60 70,50 64,40 Z"/><rect x="30" y="52" width="40" height="8" rx="2" class="band"/><rect x="22" y="82" width="56" height="8" rx="3"/>'
+};
+function pieceSvg(ch){
+  var isWhite = ch === ch.toUpperCase();
+  var type = ch.toLowerCase();
+  var fill = isWhite ? '#fdfdfd' : '#3a3a3a';
+  var stroke = isWhite ? '#2a2a2a' : '#f5f5f5';
+  var eye = isWhite ? '#2a2a2a' : '#f5f5f5';
+  return '<svg viewBox="0 0 100 100" style="fill:'+fill+';stroke:'+stroke+';stroke-width:3;stroke-linejoin:round;stroke-linecap:round;">' +
+    '<g>' + PIECE_SHAPES[type].replace(/class="eye"/g,'fill="'+eye+'" stroke="none"').replace(/class="slit"/g,'stroke="'+stroke+'" stroke-width="3"').replace(/class="band"/g,'fill="'+stroke+'" stroke="none"') + '</g></svg>';
+}
+
+/* =========================================================
+   DANE ZADAŃ
+   ========================================================= */
+var ZADANIA = [
+  { id:"f1-01", faza:1, typ:"znajdz-wszystkie", orientacja:"black",
+    tytul:"Trzy sposoby obrony",
+    polecenie:"Białe dały szacha hetmanem. Znajdź WSZYSTKIE obrony.",
+    fen:"4k3/3r4/2n5/4Q3/8/8/8/6K1 b - - 0 1",
+    rozwiazania:["c6e5","d7e7","c6e7","e8d8","e8f8","e8f7"],
+    podpowiedz:"Zbij • Zasłoń • Ucieknij",
+    wyjasnienie:"Skoczek z c6 bije hetmana. Wieża z d7 (albo skoczek na e7) zasłania króla. Król może też uciec na d8, f8 lub f7." },
+
+  { id:"f1-02", faza:1, typ:"ruch", orientacja:"white",
+    tytul:"Mat na ostatniej linii",
+    polecenie:"Zamatuj w jednym ruchu.",
+    fen:"6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1",
+    rozwiazania:["a1a8"],
+    podpowiedz:"Król nie ma gdzie uciec — własne piony go blokują.",
+    wyjasnienie:"Wa8# — czarny król jest zamknięty przez własne piony f7, g7, h7." },
+
+  { id:"f1-03", faza:1, typ:"ruch", orientacja:"white",
+    tytul:"Hetman z królem",
+    polecenie:"Zamatuj w jednym ruchu.",
+    fen:"6k1/8/6K1/8/8/8/8/3Q4 w - - 0 1",
+    rozwiazania:["d1d8"],
+    podpowiedz:"Twój król już pilnuje pól ucieczki.",
+    wyjasnienie:"Hd8# — hetman kryje ósmą linię, a król z g6 odbiera f7, g7 i h7." },
+
+  { id:"f2-01", faza:2, typ:"ruch", orientacja:"white",
+    tytul:"Schody z dwóch wież",
+    polecenie:"Zamatuj w jednym ruchu.",
+    fen:"7K/8/8/8/8/1R6/R7/3k4 w - - 0 1",
+    rozwiazania:["b3b1"],
+    podpowiedz:"Jedna wieża już odcina drugą linię.",
+    wyjasnienie:"Wb1# — wieża z a2 trzyma drugą linię, druga wieża daje mata na pierwszej." },
+
+  { id:"f2-02", faza:2, typ:"ruch", orientacja:"white",
+    tytul:"Zamknij pudełko",
+    polecenie:"Nie dawaj szacha. Zamknij króla w mniejszym pudełku.",
+    fen:"8/8/8/4k3/8/8/8/3Q2K1 w - - 0 1",
+    rozwiazania:["d1d3"],
+    podpowiedz:"Postaw hetmana tam, gdzie skoczyłby skoczek stojący na polu czarnego króla.",
+    wyjasnienie:"Hd3 — z e5 skoczek skoczyłby na d3. Hetman odcina linię d i trzecią, król ma coraz mniej miejsca." },
+
+  { id:"f3-01", faza:3, typ:"ruch", orientacja:"white",
+    tytul:"Wisząca bierka",
+    polecenie:"Coś stoi bez obrony. Zbij to.",
+    fen:"6k1/5ppp/8/3n4/8/8/5PPP/3R2K1 w - - 0 1",
+    rozwiazania:["d1d5"],
+    podpowiedz:"Sprawdź, czy skoczka ktoś broni.",
+    wyjasnienie:"Wxd5 — skoczka nie broni żadna czarna bierka." },
+
+  { id:"f4-01", faza:4, typ:"ruch", orientacja:"white",
+    tytul:"Widelec skoczkiem",
+    polecenie:"Jeden ruch skoczka atakuje króla i wieżę naraz.",
+    fen:"5r2/2k5/8/6N1/8/8/8/K7 w - - 0 1",
+    rozwiazania:["g5e6"],
+    podpowiedz:"Szukaj pola, z którego skoczek widzi c7 i f8.",
+    wyjasnienie:"Se6+ — król musi uciec z szacha, więc po jego ruchu Sxf8 zabiera wieżę." },
+
+  { id:"f4-02", faza:4, typ:"wskaz-pole", orientacja:"white",
+    tytul:"Związanie",
+    polecenie:"Dotknij skoczka, który jest związany.",
+    fen:"3qk3/8/5n2/6B1/8/8/8/4K3 w - - 0 1",
+    rozwiazania:["f6"],
+    podpowiedz:"Popatrz na przekątną gońca.",
+    wyjasnienie:"Skoczek z f6 stoi na przekątnej g5–d8. Jak się ruszy, goniec zbije hetmana." }
+];
+
+var FAZY = [
+  {id:1, nazwa:"Mat w jednym ruchu", ikona:"🏆"},
+  {id:2, nazwa:"Maty techniczne", ikona:"🪜"},
+  {id:3, nazwa:"Wartość bierek", ikona:"🎯"},
+  {id:4, nazwa:"Taktyka", ikona:"🔗"},
+  {id:5, nazwa:"Pełne zasady", ikona:"👑"}
+];
+
+var TEMAT_LICHESS = {1:["mateIn1"],2:["mateIn1"],3:["hangingPiece"],4:["fork","pin"],5:["mateIn2"]};
+
+/* =========================================================
+   FEN <-> plansza
+   ========================================================= */
+var FILES = ["a","b","c","d","e","f","g","h"];
+function fenToBoard(fen){
+  var parts = fen.trim().split(/\s+/);
+  var placement = parts[0], turn = parts[1] || "w";
+  var ranks = placement.split("/");
+  var board = {};
+  for(var r=0; r<8; r++){
+    var rankNum = 8 - r;
+    var file = 0;
+    var chars = ranks[r].split("");
+    for(var i=0;i<chars.length;i++){
+      var c = chars[i];
+      if(/[1-8]/.test(c)){
+        var n = parseInt(c,10);
+        for(var k=0;k<n;k++){ board[FILES[file]+rankNum] = null; file++; }
+      } else {
+        board[FILES[file]+rankNum] = c;
+        file++;
+      }
+    }
+  }
+  return {board:board, turn:turn};
+}
+function boardToFen(board, turn){
+  var rows = [];
+  for(var r=8; r>=1; r--){
+    var row = "", empty = 0;
+    for(var f=0; f<8; f++){
+      var p = board[FILES[f]+r];
+      if(!p){ empty++; }
+      else { if(empty>0){ row += empty; empty=0; } row += p; }
+    }
+    if(empty>0) row += empty;
+    rows.push(row);
+  }
+  return rows.join("/") + " " + turn + " - - 0 1";
+}
+function applyMoveToBoard(board, uci){
+  var nb = {};
+  for(var k in board) nb[k] = board[k];
+  var from = uci.slice(0,2), to = uci.slice(2,4);
+  var piece = nb[from];
+  if(!piece) return nb;
+  var isWhite = piece === piece.toUpperCase();
+  var toRank = parseInt(to[1],10);
+  if(piece.toLowerCase()==="p" && (toRank===8 || toRank===1)){
+    piece = isWhite ? "Q" : "q";
+  }
+  nb[to] = piece;
+  nb[from] = null;
+  return nb;
+}
+function fenUrlPart(fen){ return fen.trim().replace(/\s+/g," ").replace(/ /g,"_"); }
+
+/* =========================================================
+   LINKI LICHESS
+   ========================================================= */
+function lichessEditorUrl(fen){ return "https://lichess.org/editor/" + fenUrlPart(fen); }
+function lichessAnalysisUrl(fen, color){ return "https://lichess.org/analysis/standard/" + fenUrlPart(fen) + "?color=" + (color||"white"); }
+function lichessEmbedUrl(fen, color){ return "https://lichess.org/embed/analysis?fen=" + fenUrlPart(fen) + "&color=" + (color||"white") + "&bg=auto&theme=brown"; }
+function lichessTrainingUrl(theme){ return "https://lichess.org/training/" + theme; }
+
+/* =========================================================
+   STAN / localStorage
+   ========================================================= */
+var STORAGE_KEY = "szachy-hub-v1";
+var storageOk = true;
+
+function defaultState(){
+  return { wersja:1, zadania:{}, seria:{dni:0, ostatniDzien:null}, odblokowanaFaza:1, dzwiek:true, handicap:3 };
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    var d = defaultState();
+    for(var k in d){ if(parsed[k]===undefined) parsed[k]=d[k]; }
+    if(!parsed.zadania) parsed.zadania = {};
+    if(!parsed.seria) parsed.seria = {dni:0, ostatniDzien:null};
+    return parsed;
+  } catch(e){
+    storageOk = false;
+    return defaultState();
+  }
+}
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+  } catch(e){
+    storageOk = false;
+  }
+}
+
+var STATE = loadState();
+
+function todayStr(){
+  var d = new Date();
+  var m = String(d.getMonth()+1).padStart(2,"0");
+  var day = String(d.getDate()).padStart(2,"0");
+  return d.getFullYear()+"-"+m+"-"+day;
+}
+function daysBetween(a,b){
+  var da = new Date(a+"T00:00:00"), db = new Date(b+"T00:00:00");
+  return Math.round((db-da)/86400000);
+}
+function yesterdayOf(dateStr){
+  var d = new Date(dateStr+"T00:00:00");
+  d.setDate(d.getDate()-1);
+  var m = String(d.getMonth()+1).padStart(2,"0");
+  var day = String(d.getDate()).padStart(2,"0");
+  return d.getFullYear()+"-"+m+"-"+day;
+}
+
+function tasksByFaza(faza){ return ZADANIA.filter(function(z){ return z.faza===faza; }); }
+
+function checkFazaUnlock(faza){
+  var tasks = tasksByFaza(faza);
+  if(tasks.length===0) return;
+  var good = tasks.filter(function(t){ return STATE.zadania[t.id] && STATE.zadania[t.id].pierwszaProbaOK; }).length;
+  if(good / tasks.length >= 0.8){
+    STATE.odblokowanaFaza = Math.max(STATE.odblokowanaFaza, Math.min(5, faza+1));
+  }
+}
+
+function getOrCreateRec(taskId){
+  var rec = STATE.zadania[taskId];
+  if(!rec){ rec = {rozwiazane:false, proby:0, podpowiedz:false, data:null, pierwszaProbaOK:false}; STATE.zadania[taskId]=rec; }
+  return rec;
+}
+// wywoływane przy KAŻDYM tapnięciu (dobrym lub złym) — liczy próby dla rodzica
+function recordAttempt(taskId, usedHint){
+  var rec = getOrCreateRec(taskId);
+  rec.proby += 1;
+  if(usedHint) rec.podpowiedz = true;
+  saveState();
+}
+// wywoływane RAZ, gdy zadanie zostało w pełni rozwiązane (wszystkie odpowiedzi typu znajdz-wszystkie znalezione)
+function finalizeSolve(taskId, cleanSolve){
+  var rec = getOrCreateRec(taskId);
+  var firstTime = !rec.rozwiazane;
+  rec.rozwiazane = true;
+  rec.data = todayStr();
+  if(firstTime){
+    rec.pierwszaProbaOK = cleanSolve;
+    var task = ZADANIA.find(function(z){ return z.id===taskId; });
+    if(task) checkFazaUnlock(task.faza);
+  }
+  saveState();
+}
+
+function markDailyDone(){
+  var today = todayStr();
+  if(STATE.seria.ostatniDzien !== today){
+    if(STATE.seria.ostatniDzien === yesterdayOf(today)){
+      STATE.seria.dni += 1;
+    } else {
+      STATE.seria.dni = 1;
+    }
+    STATE.seria.ostatniDzien = today;
+    saveState();
+  }
+}
+function isDailyDoneToday(){ return STATE.seria.ostatniDzien === todayStr(); }
+function isLongAbsence(){
+  if(!STATE.seria.ostatniDzien) return false;
+  return daysBetween(STATE.seria.ostatniDzien, todayStr()) >= 3;
+}
+
+/* =========================================================
+   PLANSZA — komponent
+   ========================================================= */
+function squareOrder(orientation){
+  // zwraca 64 nazwy pól w kolejności renderowania (wiersz po wierszu, od góry)
+  var order = [];
+  var ranks = orientation==="white" ? [8,7,6,5,4,3,2,1] : [1,2,3,4,5,6,7,8];
+  var files = orientation==="white" ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
+  for(var ri=0; ri<8; ri++){
+    for(var fi=0; fi<8; fi++){
+      order.push(FILES[files[fi]] + ranks[ri]);
+    }
+  }
+  return order;
+}
+function squarePercentPos(square, orientation){
+  var file = FILES.indexOf(square[0]);
+  var rank = parseInt(square[1],10);
+  var col, row;
+  if(orientation==="white"){ col = file; row = 8-rank; }
+  else { col = 7-file; row = rank-1; }
+  return { left:(col*12.5)+"%", top:(row*12.5)+"%" };
+}
+
+function Board(container, opts){
+  // opts: {fen, orientation, onSquareTap, selectableColor}
+  this.container = container;
+  this.orientation = opts.orientation || "white";
+  this.onSquareTap = opts.onSquareTap || function(){};
+  var parsed = fenToBoard(opts.fen);
+  this.board = parsed.board;
+  this.turn = parsed.turn;
+  this.el = document.createElement("div");
+  this.el.className = "board";
+  this.gridEl = document.createElement("div");
+  this.gridEl.className = "board-grid";
+  this.piecesEl = document.createElement("div");
+  this.piecesEl.className = "pieces-layer";
+  this.el.appendChild(this.gridEl);
+  this.el.appendChild(this.piecesEl);
+  container.innerHTML = "";
+  container.appendChild(this.el);
+  this.squareEls = {};
+  this.pieceEls = {};
+  this.buildGrid();
+  this.buildPieces();
+}
+Board.prototype.buildGrid = function(){
+  var self = this;
+  var order = squareOrder(this.orientation);
+  this.gridEl.innerHTML = "";
+  order.forEach(function(sq, idx){
+    var file = FILES.indexOf(sq[0]), rank = parseInt(sq[1],10);
+    var isLight = (file+rank)%2===1;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sq " + (isLight ? "light":"dark");
+    btn.setAttribute("data-square", sq);
+    btn.setAttribute("aria-label", sq);
+    // współrzędne: litery na dolnym brzegu, cyfry na lewym brzegu
+    var row = Math.floor(idx/8), col = idx%8;
+    if(row===7){
+      var fEl = document.createElement("span");
+      fEl.className = "coord file";
+      fEl.textContent = sq[0];
+      btn.appendChild(fEl);
+    }
+    if(col===0){
+      var rEl = document.createElement("span");
+      rEl.className = "coord rank";
+      rEl.textContent = sq[1];
+      btn.appendChild(rEl);
+    }
+    btn.addEventListener("click", function(){ self.onSquareTap(sq); });
+    self.gridEl.appendChild(btn);
+    self.squareEls[sq] = btn;
+  });
+};
+Board.prototype.buildPieces = function(){
+  var self = this;
+  this.piecesEl.innerHTML = "";
+  this.pieceEls = {};
+  Object.keys(this.board).forEach(function(sq){
+    var p = self.board[sq];
+    if(!p) return;
+    self.addPieceEl(sq, p);
+  });
+};
+Board.prototype.addPieceEl = function(sq, p){
+  var el = document.createElement("div");
+  el.className = "piece";
+  var pos = squarePercentPos(sq, this.orientation);
+  el.style.left = pos.left; el.style.top = pos.top;
+  el.innerHTML = pieceSvg(p);
+  this.piecesEl.appendChild(el);
+  this.pieceEls[sq] = el;
+  return el;
+};
+Board.prototype.clearHighlights = function(){
+  var self = this;
+  Object.keys(this.squareEls).forEach(function(sq){
+    self.squareEls[sq].classList.remove("sel","ok","bad","hint-target");
+  });
+};
+Board.prototype.highlight = function(sq, cls){
+  if(this.squareEls[sq]) this.squareEls[sq].classList.add(cls);
+};
+Board.prototype.unhighlight = function(sq, cls){
+  if(this.squareEls[sq]) this.squareEls[sq].classList.remove(cls);
+};
+// animuje wizualne przesunięcie figury z from do to (bez trwałej zmiany stanu logicznego)
+Board.prototype.animateMove = function(from, to, cb){
+  var self = this;
+  var pieceEl = this.pieceEls[from];
+  if(!pieceEl){ if(cb) cb(); return; }
+  var capturedEl = this.pieceEls[to];
+  var pos = squarePercentPos(to, this.orientation);
+  pieceEl.style.zIndex = 5;
+  requestAnimationFrame(function(){
+    pieceEl.style.left = pos.left; pieceEl.style.top = pos.top;
+  });
+  if(capturedEl){ capturedEl.style.opacity = "0"; }
+  setTimeout(function(){ if(cb) cb(); }, 160);
+};
+// cofa wizualnie figurę na from (po złym ruchu)
+Board.prototype.revertMove = function(from, to){
+  var self = this;
+  var pieceEl = this.pieceEls[from];
+  var capturedEl = this.pieceEls[to];
+  if(capturedEl) capturedEl.style.opacity = "1";
+  if(pieceEl){
+    var pos = squarePercentPos(from, this.orientation);
+    requestAnimationFrame(function(){
+      pieceEl.style.left = pos.left; pieceEl.style.top = pos.top;
+    });
+  }
+};
+// trwale usuwa zbitą figurę i przenosi w warstwie DOM (po dobrym ruchu)
+Board.prototype.commitMove = function(from, to){
+  var capturedEl = this.pieceEls[to];
+  if(capturedEl && capturedEl.parentNode){ capturedEl.parentNode.removeChild(capturedEl); }
+  var movingEl = this.pieceEls[from];
+  this.pieceEls[to] = movingEl;
+  delete this.pieceEls[from];
+  this.board[to] = this.board[from];
+  this.board[from] = null;
+};
+
+/* =========================================================
+   DŹWIĘK — Web Audio API
+   ========================================================= */
+var audioCtx = null;
+function ensureAudio(){
+  if(!STATE.dzwiek) return null;
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, start, dur, type){
+  var ctx = ensureAudio();
+  if(!ctx) return;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.type = type||"sine";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.001, ctx.currentTime+start);
+  gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime+start+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(ctx.currentTime+start);
+  osc.stop(ctx.currentTime+start+dur+0.02);
+}
+function playCorrect(){ tone(523,0,0.14); tone(659,0.13,0.22); }
+function playWrong(){ tone(180,0,0.18,"triangle"); }
+
+/* =========================================================
+   MOWA — speechSynthesis
+   ========================================================= */
+var polishVoice = null;
+function refreshVoices(){
+  if(!("speechSynthesis" in window)) return;
+  var voices = speechSynthesis.getVoices();
+  polishVoice = voices.find(function(v){ return v.lang && v.lang.toLowerCase().indexOf("pl")===0; }) || null;
+}
+if("speechSynthesis" in window){
+  refreshVoices();
+  speechSynthesis.onvoiceschanged = refreshVoices;
+}
+function speak(text){
+  if(!("speechSynthesis" in window) || !polishVoice) return;
+  try{
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "pl-PL";
+    u.voice = polishVoice;
+    u.rate = 0.95;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* =========================================================
+   IKONA WG TREŚCI POLECENIA
+   ========================================================= */
+function taskIcon(task){
+  var t = task.polecenie.toLowerCase();
+  if(t.indexOf("zamatuj")>=0) return "🏆";
+  if(t.indexOf("zbij")>=0) return "🎯";
+  if(t.indexOf("związ")>=0) return "🔗";
+  if(t.indexOf("obron")>=0) return "🛡️";
+  if(t.indexOf("atakuj")>=0 || t.indexOf("widelec")>=0) return "🍴";
+  if(t.indexOf("pudełk")>=0) return "📦";
+  return "🧩";
+}
+
+/* =========================================================
+   EKRAN ZADANIA — logika rozwiązywania
+   ========================================================= */
+var TASK_SESSION = null; // {queue:[ids...], onFinish:fn, standalone:bool}
+
+function openTask(taskId, session){
+  TASK_SESSION = session || null;
+  var task = ZADANIA.find(function(z){ return z.id===taskId; });
+  if(!task) return;
+  showScreen("task");
+  var scr = document.getElementById("screen-task");
+  scr.innerHTML = "";
+
+  var back = document.createElement("button");
+  back.className = "back-link";
+  back.innerHTML = "← Wróć";
+  back.addEventListener("click", function(){
+    TASK_SESSION = null;
+    if(task.faza){ openFazaList(task.faza); } else { showScreen("zadania"); renderZadania(); }
+  });
+  scr.appendChild(back);
+
+  var head = document.createElement("div");
+  head.className = "task-head card";
+  var speakBtnHtml = polishVoice ? '<button class="readbtn" id="btnRead">🔊</button>' : "";
+  head.innerHTML =
+    '<span class="ic">'+taskIcon(task)+'</span>' +
+    '<div class="txt"><b>'+task.tytul+'</b><span>'+task.polecenie+'</span></div>' +
+    speakBtnHtml;
+  scr.appendChild(head);
+  var readBtn = document.getElementById("btnRead");
+  if(readBtn) readBtn.addEventListener("click", function(){ speak(task.polecenie); });
+
+  var counterWrap = document.createElement("div");
+  counterWrap.style.textAlign = "center";
+  scr.appendChild(counterWrap);
+
+  var boardWrap = document.createElement("div");
+  boardWrap.className = "board-wrap";
+  scr.appendChild(boardWrap);
+
+  var statusLine = document.createElement("div");
+  statusLine.className = "status-line";
+  scr.appendChild(statusLine);
+
+  var hintArea = document.createElement("div");
+  scr.appendChild(hintArea);
+
+  // stan sesji zadania
+  var wrongCount = 0;
+  var usedHint = false;
+  var foundSet = {};
+  var selected = null;
+  var locked = false;
+
+  if(task.typ==="znajdz-wszystkie"){
+    var pill = document.createElement("span");
+    pill.className = "counter-pill";
+    pill.id = "foundCounter";
+    pill.textContent = "znaleziono 0/" + task.rozwiazania.length;
+    counterWrap.appendChild(pill);
+  }
+
+  var board = new Board(boardWrap, {
+    fen: task.fen,
+    orientation: task.orientacja,
+    onSquareTap: onTap
+  });
+
+  function updateCounter(){
+    var el = document.getElementById("foundCounter");
+    if(el) el.textContent = "znaleziono " + Object.keys(foundSet).length + "/" + task.rozwiazania.length;
+  }
+
+  function showHintButtonIfNeeded(){
+    if(wrongCount>=3 && !hintArea.querySelector(".hintbtn")){
+      var b = document.createElement("button");
+      b.className = "btn btn-outline hintbtn";
+      b.style.width = "100%";
+      b.style.marginTop = "8px";
+      b.innerHTML = "💡 Podpowiedź";
+      b.addEventListener("click", function(){
+        usedHint = true;
+        var box = document.createElement("div");
+        box.className = "hint-box";
+        box.textContent = "💡 " + task.podpowiedz;
+        hintArea.appendChild(box);
+        b.remove();
+      });
+      hintArea.appendChild(b);
+    }
+  }
+
+  function flashStatus(text, cls){
+    statusLine.textContent = text;
+    statusLine.className = "status-line " + (cls||"");
+  }
+
+  function onTap(sq){
+    if(locked) return;
+
+    if(task.typ==="wskaz-pole"){
+      handleGuess(sq, sq); // porównujemy samo pole
+      return;
+    }
+
+    var piece = board.board[sq];
+    if(selected===null){
+      if(piece && (piece===piece.toUpperCase())===(board.turn==="w")){
+        selected = sq;
+        board.highlight(sq, "sel");
+      }
+      return;
+    }
+    if(selected===sq){
+      board.unhighlight(sq,"sel");
+      selected = null;
+      return;
+    }
+    // jeśli tapnięto inną własną figurę — zmień wybór
+    if(piece && (piece===piece.toUpperCase())===(board.turn==="w")){
+      board.unhighlight(selected,"sel");
+      selected = sq;
+      board.highlight(sq,"sel");
+      return;
+    }
+    var uci = selected + sq;
+    var fromSq = selected;
+    board.unhighlight(selected,"sel");
+    selected = null;
+    handleGuess(uci, fromSq, sq);
+  }
+
+  function handleGuess(answer, fromSq, toSq){
+    var isMoveType = (task.typ!=="wskaz-pole");
+    var correct = task.rozwiazania.indexOf(answer)>=0;
+
+    if(isMoveType){
+      board.animateMove(fromSq, toSq, function(){
+        if(correct){
+          board.highlight(toSq,"ok");
+        } else {
+          board.highlight(toSq,"bad");
+        }
+        finishGuess(correct, answer, fromSq, toSq);
+      });
+    } else {
+      if(correct){ board.highlight(toSq,"ok"); } else { board.highlight(toSq,"bad"); }
+      finishGuess(correct, answer, fromSq, toSq);
+    }
+  }
+
+  function finishGuess(correct, answer, fromSq, toSq){
+    recordAttempt(task.id, usedHint);
+
+    if(correct){
+      playCorrect();
+      flashStatus("Brawo!", "ok");
+      if(task.typ==="znajdz-wszystkie"){
+        var alreadyHad = !!foundSet[answer];
+        foundSet[answer]=true;
+        updateCounter();
+        var allFound = Object.keys(foundSet).length >= task.rozwiazania.length;
+        setTimeout(function(){
+          statusLine.textContent = "";
+          if(fromSq && toSq){ board.revertMove(fromSq, toSq); }
+          if(allFound){
+            locked = true;
+            finalizeSolve(task.id, wrongCount===0 && !usedHint);
+            setTimeout(function(){ showExplanation(task); }, 500);
+          }
+        }, 700);
+      } else {
+        locked = true;
+        finalizeSolve(task.id, wrongCount===0 && !usedHint);
+        setTimeout(function(){
+          if(fromSq && toSq){ board.commitMove(fromSq, toSq); }
+          showExplanation(task);
+        }, 800);
+      }
+    } else {
+      playWrong();
+      wrongCount++;
+      flashStatus("Spróbuj jeszcze raz", "bad");
+      showHintButtonIfNeeded();
+      setTimeout(function(){
+        if(fromSq && toSq){ board.revertMove(fromSq, toSq); }
+        board.unhighlight(toSq,"bad");
+        statusLine.textContent = "";
+      }, 550);
+    }
+  }
+}
+
+function showExplanation(task){
+  var overlay = document.createElement("div");
+  overlay.className = "explain-overlay";
+  var lastMove = task.rozwiazania[task.rozwiazania.length-1];
+  var resultBoard = fenToBoard(task.fen).board;
+  var resultTurn = fenToBoard(task.fen).turn;
+  if(task.typ!=="wskaz-pole"){
+    resultBoard = applyMoveToBoard(resultBoard, lastMove);
+    resultTurn = resultTurn==="w" ? "b":"w";
+  }
+  var resultFen = boardToFen(resultBoard, resultTurn);
+  var lichessUrl = lichessAnalysisUrl(resultFen, task.orientacja==="white"?"white":"black");
+
+  overlay.innerHTML =
+    '<div class="explain-sheet">' +
+      '<div class="big-ok">🎉</div>' +
+      '<h2>Rozwiązane!</h2>' +
+      '<p>'+task.wyjasnienie+'</p>' +
+      '<div class="actions">' +
+        '<button class="btn btn-primary" id="btnNext">Dalej →</button>' +
+        '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  document.getElementById("btnNext").addEventListener("click", function(){
+    overlay.remove();
+    nextAfterTask(task);
+  });
+}
+
+function nextAfterTask(task){
+  if(TASK_SESSION && TASK_SESSION.queue && TASK_SESSION.queue.length>0){
+    var nextId = TASK_SESSION.queue.shift();
+    openTask(nextId, TASK_SESSION);
+  } else if(TASK_SESSION && TASK_SESSION.onFinish){
+    var fn = TASK_SESSION.onFinish;
+    TASK_SESSION = null;
+    fn();
+  } else {
+    openFazaList(task.faza);
+  }
+}
+
+/* =========================================================
+   NAWIGACJA / ZAKŁADKI
+   ========================================================= */
+var TABS = ["dzis","zadania","graj","moje"];
+function showScreen(name){
+  ["dzis","zadania","graj","moje","task"].forEach(function(n){
+    var el = document.getElementById("screen-"+n);
+    if(el) el.classList.toggle("active", n===name);
+  });
+  if(TABS.indexOf(name)>=0){
+    document.querySelectorAll("nav.bottom button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab")===name);
+    });
+  }
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("nav.bottom button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var tab = btn.getAttribute("data-tab");
+    showScreen(tab);
+    if(tab==="dzis") renderDzis();
+    if(tab==="zadania") renderZadania();
+    if(tab==="graj") renderGraj();
+    if(tab==="moje") renderMoje();
+  });
+});
+
+/* =========================================================
+   EKRAN „DZIŚ"
+   ========================================================= */
+function pickDailyQueue(){
+  var faza = STATE.odblokowanaFaza;
+  var longAbsence = isLongAbsence();
+  var pool = [];
+  if(longAbsence){
+    pool = ZADANIA.filter(function(z){ return STATE.zadania[z.id] && STATE.zadania[z.id].rozwiazane; });
+    shuffle(pool);
+    return pool.slice(0,5).map(function(z){ return z.id; });
+  }
+  var current = tasksByFaza(faza);
+  var unsolved = current.filter(function(z){ return !(STATE.zadania[z.id]&&STATE.zadania[z.id].rozwiazane); });
+  var solved = current.filter(function(z){ return STATE.zadania[z.id]&&STATE.zadania[z.id].rozwiazane; });
+  var picks = unsolved.concat(solved);
+  if(picks.length<5){
+    for(var f=faza-1; f>=1 && picks.length<5; f--){
+      picks = picks.concat(tasksByFaza(f));
+    }
+  }
+  picks = picks.slice(0,5).map(function(z){ return z.id; });
+  // 1 powtórka z wcześniejszej fazy
+  var earlierSolved = ZADANIA.filter(function(z){
+    return z.faza<faza && STATE.zadania[z.id] && STATE.zadania[z.id].rozwiazane;
+  });
+  if(earlierSolved.length>0){
+    var pick = earlierSolved[Math.floor(Math.random()*earlierSolved.length)];
+    picks.push(pick.id);
+  }
+  return picks;
+}
+function shuffle(arr){
+  for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr;
+}
+
+function dniSlowo(n){
+  if(n===1) return "dzień";
+  var mod10 = n%10, mod100 = n%100;
+  if(mod10>=2 && mod10<=4 && !(mod100>=12 && mod100<=14)) return "dni";
+  return "dni";
+}
+function renderDzis(){
+  var scr = document.getElementById("screen-dzis");
+  var done = isDailyDoneToday();
+  var longAbsence = isLongAbsence();
+  var html = '<div style="text-align:center;">';
+  html += '<div class="streak-pill">🔥 '+STATE.seria.dni+' '+dniSlowo(STATE.seria.dni)+' z rzędu</div>';
+  html += '</div>';
+  html += '<div class="card start-wrap">';
+  if(longAbsence && !done){
+    html += '<p style="font-weight:700;">Dawno cię nie było — zaczynamy od powtórki 🙂</p>';
+  }
+  html += '<div class="big">'+(done ? '✅' : '🎯')+'</div>';
+  if(done){
+    html += '<button class="btn btn-secondary" id="btnDoneToday" disabled>✅ Zrobione! Wróć jutro</button>';
+    html += '<div style="height:10px;"></div>';
+    html += '<button class="btn btn-outline" id="btnAgain" style="width:100%;">🔁 Jeszcze raz</button>';
+  } else {
+    html += '<button class="btn btn-primary" id="btnStart">Zaczynamy!</button>';
+  }
+  html += '</div>';
+  scr.innerHTML = html;
+
+  var startBtn = document.getElementById("btnStart");
+  if(startBtn) startBtn.addEventListener("click", startDailySession);
+  var againBtn = document.getElementById("btnAgain");
+  if(againBtn) againBtn.addEventListener("click", startDailySession);
+}
+function startDailySession(){
+  var queue = pickDailyQueue();
+  if(queue.length===0){ return; }
+  var firstId = queue.shift();
+  openTask(firstId, {
+    queue: queue,
+    onFinish: function(){
+      markDailyDone();
+      showScreen("dzis");
+      renderDzis();
+    }
+  });
+}
+
+/* =========================================================
+   EKRAN „ZADANIA"
+   ========================================================= */
+function renderZadania(){
+  var scr = document.getElementById("screen-zadania");
+  var html = '<h2>Zadania</h2>';
+  FAZY.forEach(function(f){
+    var tasks = tasksByFaza(f.id);
+    var solved = tasks.filter(function(t){ return STATE.zadania[t.id]&&STATE.zadania[t.id].rozwiazane; }).length;
+    var locked = f.id>STATE.odblokowanaFaza;
+    var pct = tasks.length ? Math.round(solved/tasks.length*100) : 0;
+    html += '<button class="faza-tile'+(locked?' locked':'')+'" data-faza="'+f.id+'" '+(locked||tasks.length===0?'disabled':'')+' style="border:none;">';
+    html += '<span class="num">'+f.id+'</span>';
+    html += '<div class="info"><b>'+f.ikona+' '+f.nazwa+'</b><span>'+(tasks.length===0?'wkrótce nowe zadania':(solved+' / '+tasks.length+' rozwiązane'))+'</span>';
+    if(tasks.length>0) html += '<div class="progress-bar"><div style="width:'+pct+'%;"></div></div>';
+    html += '</div>';
+    html += '<span class="lock">'+(locked?'🔒':'')+'</span>';
+    html += '</button>';
+  });
+  scr.innerHTML = html;
+  scr.querySelectorAll(".faza-tile").forEach(function(btn){
+    if(btn.disabled) return;
+    btn.addEventListener("click", function(){ openFazaList(parseInt(btn.getAttribute("data-faza"),10)); });
+  });
+}
+function openFazaList(fazaId){
+  showScreen("zadania");
+  var scr = document.getElementById("screen-zadania");
+  var faza = FAZY.find(function(f){ return f.id===fazaId; });
+  var tasks = tasksByFaza(fazaId);
+  var html = '<button class="back-link" id="backToFazy">← Wróć do faz</button>';
+  html += '<h2>'+faza.ikona+' '+faza.nazwa+'</h2>';
+  tasks.forEach(function(t){
+    var rec = STATE.zadania[t.id];
+    var icon = "⬜";
+    if(rec && rec.rozwiazane){ icon = rec.pierwszaProbaOK ? "🌟" : "⭐"; }
+    html += '<button class="task-row" data-task="'+t.id+'" style="border:none;">';
+    html += '<span class="stateicon">'+icon+'</span>';
+    html += '<span class="ttl"><b>'+taskIcon(t)+' '+t.tytul+'</b><span>'+t.polecenie+'</span></span>';
+    html += '</button>';
+  });
+  scr.innerHTML = html;
+  document.getElementById("backToFazy").addEventListener("click", function(){ showScreen("zadania"); renderZadania(); });
+  scr.querySelectorAll(".task-row").forEach(function(btn){
+    btn.addEventListener("click", function(){ openTask(btn.getAttribute("data-task"), null); });
+  });
+}
+
+/* =========================================================
+   EKRAN „GRAJ"
+   ========================================================= */
+var ENDGAMES = [
+  {nazwa:"Mat hetmanem", fen:"4k3/8/8/8/8/8/8/3QK3 w - - 0 1"},
+  {nazwa:"Mat dwiema wieżami", fen:"4k3/8/8/8/8/8/R7/1R2K3 w - - 0 1"},
+  {nazwa:"Mat wieżą (trudny)", fen:"4k3/8/8/8/8/8/8/R3K3 w - - 0 1"}
+];
+function renderGraj(){
+  var scr = document.getElementById("screen-graj");
+  var online = navigator.onLine;
+  var html = '<h2>Graj</h2>';
+  if(!online){
+    html += '<div class="offline-banner">📡 Potrzebny internet, żeby tu grać</div>';
+  }
+  html += '<h3>🏁 Końcówki do ćwiczenia</h3>';
+  ENDGAMES.forEach(function(e){
+    html += linkRow("🏁", e.nazwa, "otwórz w edytorze lichess", lichessEditorUrl(e.fen), online);
+  });
+  html += '<p class="net-note">Na stronie lichess: „Continue from here" → „Play with the computer".</p>';
+
+  html += '<h3>🧩 Zadania bez końca</h3>';
+  var tematy = TEMAT_LICHESS[STATE.odblokowanaFaza] || ["mateIn1"];
+  tematy.forEach(function(t){
+    html += linkRow("🧩", "Puzzle: "+t, "lichess.org/training/"+t, lichessTrainingUrl(t), online);
+  });
+
+  html += '<h3>♟️ Zagraj partię</h3>';
+  html += linkRow("♟️", "Zagraj z komputerem", "na stronie głównej lichess kliknij „Graj z komputerem”", "https://lichess.org/", online);
+
+  html += '<h3>🎨 Plansza do zabawy</h3>';
+  if(online){
+    html += '<div class="card embed-wrap"><iframe src="'+lichessEmbedUrl("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1","white")+'" loading="lazy"></iframe></div>';
+  } else {
+    html += '<div class="offline-banner">📡 Potrzebny internet</div>';
+  }
+  scr.innerHTML = html;
+}
+function linkRow(icon, title, sub, href, online){
+  if(!online){
+    return '<div class="play-link" style="opacity:.5;"><span class="ic">'+icon+'</span><div><b>'+title+'</b><span>'+sub+'</span></div></div>';
+  }
+  return '<a class="play-link" href="'+href+'" target="_blank" rel="noopener"><span class="ic">'+icon+'</span><div><b>'+title+'</b><span>'+sub+'</span></div></a>';
+}
+window.addEventListener("online", function(){ if(document.getElementById("screen-graj").classList.contains("active")) renderGraj(); });
+window.addEventListener("offline", function(){ if(document.getElementById("screen-graj").classList.contains("active")) renderGraj(); });
+
+/* =========================================================
+   EKRAN „MOJE"
+   ========================================================= */
+function renderMoje(){
+  var scr = document.getElementById("screen-moje");
+  var gwiazdki = 0;
+  Object.keys(STATE.zadania).forEach(function(id){
+    var r = STATE.zadania[id];
+    if(r.rozwiazane) gwiazdki += r.pierwszaProbaOK ? 2 : 1;
+  });
+  var totalSolved = Object.keys(STATE.zadania).filter(function(id){ return STATE.zadania[id].rozwiazane; }).length;
+
+  var html = '<h2>Moje</h2>';
+  html += '<div class="stat-grid">';
+  html += '<div class="stat-box"><div class="n">⭐ '+gwiazdki+'</div><div class="l">gwiazdki</div></div>';
+  html += '<div class="stat-box"><div class="n">🔥 '+STATE.seria.dni+'</div><div class="l">'+dniSlowo(STATE.seria.dni)+' z rzędu</div></div>';
+  html += '</div>';
+
+  html += '<div class="card"><h3 style="margin-top:0;">Postęp faz</h3>';
+  FAZY.forEach(function(f){
+    var tasks = tasksByFaza(f.id);
+    var solved = tasks.filter(function(t){ return STATE.zadania[t.id]&&STATE.zadania[t.id].rozwiazane; }).length;
+    var pct = tasks.length ? Math.round(solved/tasks.length*100) : 0;
+    html += '<div class="faza-mini"><span class="lbl">'+f.ikona+' F'+f.id+'</span><div class="progress-bar"><div style="width:'+pct+'%;"></div></div><span class="pct">'+pct+'%</span></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="card">';
+  html += '<div class="toggle-row"><span>🔊 Dźwięk</span><button class="switch'+(STATE.dzwiek?' on':'')+'" id="soundToggle"><span class="knob"></span></button></div>';
+  html += '</div>';
+
+  html += '<div class="card" style="text-align:center;">';
+  html += '<p class="small-muted">Przytrzymaj logo na górze przez 3 sekundy, żeby otworzyć panel rodzica.</p>';
+  html += '<button class="btn btn-outline" id="btnParentGate" style="width:100%;">🔐 Panel rodzica</button>';
+  html += '</div>';
+
+  html += '<p class="attrib">Figury: własna grafika SVG (bez zewnętrznych bibliotek).</p>';
+
+  scr.innerHTML = html;
+
+  document.getElementById("soundToggle").addEventListener("click", function(){
+    STATE.dzwiek = !STATE.dzwiek;
+    saveState();
+    renderMoje();
+  });
+  document.getElementById("btnParentGate").addEventListener("click", openParentGateModal);
+}
+
+/* =========================================================
+   PANEL RODZICA — bramka i zawartość
+   ========================================================= */
+var logoHoldTimer = null;
+document.getElementById("logoHold").addEventListener("touchstart", startLogoHold);
+document.getElementById("logoHold").addEventListener("mousedown", startLogoHold);
+document.getElementById("logoHold").addEventListener("touchend", cancelLogoHold);
+document.getElementById("logoHold").addEventListener("mouseup", cancelLogoHold);
+document.getElementById("logoHold").addEventListener("mouseleave", cancelLogoHold);
+function startLogoHold(){
+  cancelLogoHold();
+  logoHoldTimer = setTimeout(function(){ openParentPanel(); }, 3000);
+}
+function cancelLogoHold(){
+  if(logoHoldTimer){ clearTimeout(logoHoldTimer); logoHoldTimer=null; }
+}
+
+function openParentGateModal(){
+  var a = Math.floor(Math.random()*8)+2;
+  var b = Math.floor(Math.random()*8)+2;
+  var modal = document.createElement("div");
+  modal.className = "gate-modal";
+  modal.innerHTML =
+    '<div class="gate-card">' +
+      '<button class="close-x" id="gateClose">✕</button>' +
+      '<h3>Pytanie dla rodzica</h3>' +
+      '<p>Ile to jest '+a+' × '+b+' ?</p>' +
+      '<input type="number" id="gateInput" inputmode="numeric">' +
+      '<button class="btn btn-primary" id="gateOk" style="width:100%;">Sprawdź</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  document.getElementById("gateClose").addEventListener("click", function(){ modal.remove(); });
+  document.getElementById("gateOk").addEventListener("click", function(){
+    var val = parseInt(document.getElementById("gateInput").value,10);
+    if(val===a*b){ modal.remove(); openParentPanel(); }
+    else { document.getElementById("gateInput").style.borderColor="#c0392b"; }
+  });
+}
+
+function openParentPanel(){
+  var modal = document.createElement("div");
+  modal.className = "parent-modal";
+  var rows = "";
+  Object.keys(STATE.zadania).forEach(function(id){
+    var r = STATE.zadania[id];
+    var t = ZADANIA.find(function(z){ return z.id===id; });
+    rows += '<tr><td>'+(t?t.tytul:id)+'</td><td>'+r.proby+'</td><td>'+(r.podpowiedz?'tak':'nie')+'</td><td>'+(r.data||'-')+'</td></tr>';
+  });
+  modal.innerHTML =
+    '<div class="parent-card">' +
+      '<button class="close-x" id="parentClose">✕</button>' +
+      '<h3>Panel rodzica</h3>' +
+      '<table><thead><tr><th>Zadanie</th><th>Prób</th><th>Podp.</th><th>Data</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4">Brak danych</td></tr>')+'</tbody></table>' +
+      '<p class="small-muted">Szczebel handicapu (tylko notatka, aplikacja go nie używa):</p>' +
+      '<input type="range" min="1" max="6" value="'+STATE.handicap+'" class="slider" id="handicapSlider">' +
+      '<p class="small-muted" style="text-align:center;">Poziom: <b id="handicapVal">'+STATE.handicap+'</b></p>' +
+      '<div class="icon-btn-row">' +
+        '<button class="btn btn-outline" id="btnExport" style="flex:1;">📋 Eksport JSON</button>' +
+        '<button class="btn btn-outline" id="btnImportShow" style="flex:1;">📥 Import JSON</button>' +
+      '</div>' +
+      '<textarea id="importArea" rows="4" style="display:none;" placeholder="Wklej tu JSON..."></textarea>' +
+      '<button class="btn btn-secondary" id="btnImportGo" style="display:none;width:100%;margin-top:8px;">Wczytaj</button>' +
+      '<button class="btn btn-outline" id="btnReset" style="width:100%; margin-top:16px; color:#c0392b; border-color:#c0392b;">🗑️ Reset postępów</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  document.getElementById("parentClose").addEventListener("click", function(){ modal.remove(); });
+  document.getElementById("handicapSlider").addEventListener("input", function(e){
+    STATE.handicap = parseInt(e.target.value,10);
+    document.getElementById("handicapVal").textContent = STATE.handicap;
+    saveState();
+  });
+  document.getElementById("btnExport").addEventListener("click", function(){
+    var json = JSON.stringify(STATE);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(json).then(function(){ alert("Skopiowano do schowka!"); }).catch(function(){ fallbackCopy(json); });
+    } else { fallbackCopy(json); }
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); alert("Skopiowano do schowka!"); }catch(e){ alert("Nie udało się skopiować."); }
+    ta.remove();
+  }
+  document.getElementById("btnImportShow").addEventListener("click", function(){
+    document.getElementById("importArea").style.display="block";
+    document.getElementById("btnImportGo").style.display="block";
+  });
+  document.getElementById("btnImportGo").addEventListener("click", function(){
+    try{
+      var parsed = JSON.parse(document.getElementById("importArea").value);
+      STATE = parsed;
+      saveState();
+      alert("Wczytano postępy!");
+      modal.remove();
+      renderMoje();
+    }catch(e){ alert("Niepoprawny JSON."); }
+  });
+  document.getElementById("btnReset").addEventListener("click", function(){
+    if(confirm("Na pewno zresetować wszystkie postępy?")){
+      STATE = defaultState();
+      saveState();
+      modal.remove();
+      renderMoje();
+    }
+  });
+}
+
+/* =========================================================
+   START
+   ========================================================= */
+renderDzis();
+renderZadania();
+renderGraj();
+renderMoje();
+showScreen("dzis");
+</script>
+</body>
+</html>
