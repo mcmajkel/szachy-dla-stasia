@@ -42,7 +42,7 @@ Tu jest największa niespodzianka researchu. Kolejność lekcji w Kroku 1 wyglą
 
 Mat pojawia się dopiero jako **siódma** lekcja, po biciu i obronie. Autorzy komentują to jednoznacznie: naukę matowania odkłada się tak długo, jak się da.
 
-**Uwaga dla Ciebie:** Twój plan (i faza 1 aplikacji) zaczyna od mata w 1. To rozjazd z metodą źródłową. Nie przebudowałem z tego powodu faz — bo Staś zna już ruchy figur, a Twój plan świadomie wybiera „cel gry" jako pierwszy temat motywacyjny — ale **dołożyłem 30 zadań na obronę przed szachem do fazy 1**, żeby bicie i obrona nie zostały przeskoczone.
+**Aplikacja idzie dokładnie tą kolejnością.** Pierwotnie faza 1 zaczynała od mata w 1 (za Twoim planem), ale skoro decyzja nie była niczym podyktowana, przebudowałem fazy na zgodne z metodą. Lekcje 1–2 (plansza, ruchy figur) są pominięte, bo Staś je zna — aplikacja zaczyna od lekcji 3.
 
 ### 1.6 Rytuał trzech pytań
 
@@ -58,22 +58,26 @@ To gotowy rytuał do powtarzania przy prawdziwej szachownicy — i naturalny kie
 
 ## Część 2 — Program zadań, który z tego zbudowałem
 
-### 2.1 Co jest w aplikacji teraz
+### 2.1 Fazy = kolejność lekcji metody
 
-**286 zadań**, wszystkie sprawdzone silnikiem szachowym:
+**432 zadania**, wszystkie sprawdzone silnikiem. Numeracja faz odpowiada lekcjom Kroku 1:
 
-| Paczka | Zadań | Faza | Motyw |
-|---|---|---|---|
-| `pakiet-00-start` | 8 | 1–4 | zestaw startowy, pisany ręcznie wg Twojego planu |
-| `pakiet-01-mat-w-1` | 100 | 1 | mat w jednym ruchu (hetman, wieża, kombinacje) |
-| `pakiet-02-obrona` | 30 | 1 | wszystkie obrony przed szachem |
-| `pakiet-03-maty-techniczne` | 50 | 2 | schody dwiema wieżami, domknięcie hetmanem |
-| `pakiet-04-wiszace-bierki` | 50 | 3 | zbij bierkę, której nikt nie broni |
-| `pakiet-05-widelce` | 48 | 4 | widelec skoczkiem |
+| Faza | Nazwa | Lekcja | Zadań | Czego uczy |
+|---|---|---|---|---|
+| 1 | Bicie | 3 | 55 | zobaczyć, że można coś zabrać |
+| 2 | Obrona bierki | 5 | 46 | uciec, zbić napastnika, zasłonić, obronić |
+| 3 | Szach | 6 | 71 | dać szacha i obronić się przed nim |
+| 4 | Mat w jednym ruchu | 7–8 | 107 | domknięcie partii |
+| 5 | Co się opłaca | 10 | 51 | wiszące bierki, wartość materiału |
+| 6 | Podwójny atak | 11 | 50 | widelec skoczkiem |
+| 7 | Maty techniczne | 13 | 52 | schody dwiema wieżami, mat hetmanem |
+| 8 | Pełne zasady | 9, 12, 14 | 0 | roszada, remisy, bicie w przelocie — do zrobienia |
 
-Twój plan wymagał „minimum 100 pozycji mata w 1" — **jest dokładnie 100**. Na motywy taktyczne plan mówił „20–30 zadań na motyw" — widelców jest 48.
+Mata jest 107 — Twój plan wymagał „minimum 100 pozycji mata w 1". Widelców 50, przy wymaganiu „20–30 na motyw".
 
-Przy 6 zadaniach dziennie to **ok. 7 tygodni** materiału bez powtórek, a z powtórkami dłużej.
+Przy 6 zadaniach dziennie to **ok. 11 tygodni** materiału bez powtórek.
+
+Zadania rozwiązane przed przebudową nie przepadły: id są stałe, a migracja stanu (`wersja` 1 → 2) przelicza tylko numer odblokowanej fazy.
 
 ### 2.2 Trzy poziomy wewnątrz każdej fazy
 
@@ -91,21 +95,23 @@ To realizacja tej samej zasady, co Twoja drabinka handicapu — celuj w wysoki o
 
 Bo ręczne pisanie **już raz zawiodło**. Pierwsze zadanie ze SPEC-a (`f1-01`, „trzy sposoby obrony") miało wypisane 4 obrony, a legalnych jest **6** — brakowało `c6e7` (skoczek zasłania) i `e8f7` (król ucieka). Dziecko zagrałoby dobry ruch i dostało „spróbuj jeszcze raz".
 
-Przy 286 zadaniach takich dziur byłyby dziesiątki. Dlatego:
+Przy 432 zadaniach takich dziur byłyby dziesiątki. Dlatego:
 
 - `tools/generuj.js` układa rzadkie pozycje i **wylicza rozwiązania silnikiem** (chess.js) — lista jest kompletna z definicji,
-- `tools/waliduj.js` przelicza wszystko od nowa i porównuje; obecny wynik: **286 zadań, 0 błędów**,
+- `tools/waliduj.js` przelicza wszystko od nowa i porównuje; obecny wynik: **432 zadania, 0 błędów**,
 - silnik jest tylko narzędziem autorskim — do przeglądarki trafiają gotowe dane, więc aplikacja dalej jest jednym plikiem bez zależności.
 
 Walidator przy okazji wyłapał, że oryginalne `f3-01` ma **10 bierek** — powyżej progu z §1.2. Zostawiłem je (jest z Twojego planu), ale nowe zadania takie nie są.
 
 ### 2.4 Czego świadomie nie ma i co dalej
 
-**Faza 5 (pełne zasady) jest pusta.** Roszada, bicie w przelocie i pat wymagają albo nowych typów zadań („pat czy mat?" to pytanie wyboru, nie ruch), albo silnika w przeglądarce. To naturalna następna paczka.
+**Faza 8 (pełne zasady) jest pusta.** Roszada, bicie w przelocie i pat wymagają albo nowych typów zadań („pat czy mat?" to pytanie wyboru, nie ruch), albo silnika w przeglądarce. To naturalna następna paczka.
+
+**Pominięte lekcje 1–2 i 4.** Plansza, ruchy figur i pion — Staś to zna, więc aplikacja zaczyna od lekcji 3. Jeśli okaże się, że np. ruch gońca jeszcze kuleje, dorobienie paczki „jak chodzi ta figura" to jeden przebieg generatora.
 
 Kolejni kandydaci, w kolejności wartości:
 
-1. **Związania i ataki odkryte** (faza 4) — plan przewiduje po 20–30 zadań, generator ma już walidator związań.
+1. **Związania i ataki odkryte** (faza 6) — plan przewiduje po 20–30 zadań, generator ma już walidator związań.
 2. **Zadania „mix"** — bez podanego tematu, z rytuałem trzech pytań z §1.6. To dokładnie to, czego metoda używa jako pomostu do prawdziwej partii.
 3. **Board vision / „bezpieczna droga"** — ćwiczenie z „Stepping stones": przeprowadź figurę przez planszę, nie wchodząc pod bicie. Uczy patrzenia na to, co robi przeciwnik.
 

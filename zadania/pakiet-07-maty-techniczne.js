@@ -4,19 +4,51 @@
  * NIE edytowac recznie — patrz FORMAT-ZADAN.md
  */
 ZADANIA_PAKIET({
- "id": "pakiet-03",
+ "id": "pakiet-07",
  "nazwa": "Maty techniczne",
- "faza": 2,
+ "faza": 7,
  "wersja": 1,
  "zadania": [
   {
-   "id": "g2a-01",
-   "faza": 2,
+   "id": "b7a-01",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
+   "polecenie": "Zamatuj w jednym ruchu.",
+   "fen": "8/8/8/8/8/3R4/1R6/k1K5 w - - 0 1",
+   "rozwiazania": [
+    "d3a3"
+   ],
+   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
+   "wyjasnienie": "Wa3# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
+  },
+  {
+   "id": "b7a-02",
+   "faza": 7,
+   "poziom": 1,
+   "motyw": "mat-w-1",
+   "typ": "ruch",
+   "orientacja": "white",
+   "tytul": "Schody z dwoch wiez",
+   "polecenie": "Zamatuj w jednym ruchu.",
+   "fen": "k7/8/K1R5/R7/8/8/8/8 w - - 0 1",
+   "rozwiazania": [
+    "c6c8"
+   ],
+   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
+   "wyjasnienie": "Wc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
+  },
+  {
+   "id": "b7a-03",
+   "faza": 7,
+   "poziom": 1,
+   "motyw": "mat-w-1",
+   "typ": "ruch",
+   "orientacja": "white",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/1R6/k7/1R6/K7/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -26,13 +58,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wb6# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-02",
-   "faza": 2,
+   "id": "b7a-04",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "2K5/k7/3R4/8/2R5/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -42,13 +74,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wa4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-03",
-   "faza": 2,
+   "id": "b7a-05",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "4K3/8/7k/8/6R1/4R3/8/8 w - - 0 1",
    "rozwiazania": [
@@ -58,13 +90,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh3# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-04",
-   "faza": 2,
+   "id": "b7a-06",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "5K1k/4RR2/8/8/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -74,13 +106,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh7# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-05",
-   "faza": 2,
+   "id": "b7a-07",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/1K6/6R1/2R5/4k3 w - - 0 1",
    "rozwiazania": [
@@ -90,13 +122,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wg1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-06",
-   "faza": 2,
+   "id": "b7a-08",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/1R6/3R4/k1K5/8 w - - 0 1",
    "rozwiazania": [
@@ -106,13 +138,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wa4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-07",
-   "faza": 2,
+   "id": "b7a-09",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/4K3/2R5/3R4/5k2 w - - 0 1",
    "rozwiazania": [
@@ -122,13 +154,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wc1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-08",
-   "faza": 2,
+   "id": "b7a-10",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/3R4/8/k7/8/1RK5/8/8 w - - 0 1",
    "rozwiazania": [
@@ -138,13 +170,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wa7# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-09",
-   "faza": 2,
+   "id": "b7a-11",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/8/3R1K2/6R1/5k2 w - - 0 1",
    "rozwiazania": [
@@ -154,13 +186,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wd1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-10",
-   "faza": 2,
+   "id": "b7a-12",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/7K/4R3/7k/5R2/8/8 w - - 0 1",
    "rozwiazania": [
@@ -170,13 +202,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "We4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-11",
-   "faza": 2,
+   "id": "b7a-13",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "4k3/3R4/2R1K3/8/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -186,13 +218,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-12",
-   "faza": 2,
+   "id": "b7a-14",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/8/5K1R/2R5/5k2 w - - 0 1",
    "rozwiazania": [
@@ -203,13 +235,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-13",
-   "faza": 2,
+   "id": "b7a-15",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/6R1/8/8/7k/8/6R1/7K w - - 0 1",
    "rozwiazania": [
@@ -220,13 +252,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh7# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-14",
-   "faza": 2,
+   "id": "b7a-16",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "5k2/8/5K2/2R4R/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -237,13 +269,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-15",
-   "faza": 2,
+   "id": "b7a-17",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "3R4/2K5/k7/2R5/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -253,13 +285,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wa8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-16",
-   "faza": 2,
+   "id": "b7a-18",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/6R1/3R4/8/4k1K1 w - - 0 1",
    "rozwiazania": [
@@ -269,13 +301,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "We4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-17",
-   "faza": 2,
+   "id": "b7a-19",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "k7/2R5/3R4/1K6/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -285,13 +317,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wd8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-18",
-   "faza": 2,
+   "id": "b7a-20",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "7k/6R1/4R2K/8/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -301,13 +333,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "We8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-19",
-   "faza": 2,
+   "id": "b7a-21",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/8/4R1K1/4R3/7k w - - 0 1",
    "rozwiazania": [
@@ -317,13 +349,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "We1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-20",
-   "faza": 2,
+   "id": "b7a-22",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/8/8/6R1/5R2/5K2/7k w - - 0 1",
    "rozwiazania": [
@@ -334,13 +366,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-21",
-   "faza": 2,
+   "id": "b7a-23",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/8/5KR1/7k/8/6R1/8/8 w - - 0 1",
    "rozwiazania": [
@@ -350,13 +382,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Wh3# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-22",
-   "faza": 2,
+   "id": "b7a-24",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "8/k7/8/KR6/R7/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -366,13 +398,13 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Kb4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-23",
-   "faza": 2,
+   "id": "b7a-25",
+   "faza": 7,
    "poziom": 1,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Schody z dwoch wiez",
    "polecenie": "Zamatuj w jednym ruchu.",
    "fen": "7k/8/4R2K/7R/8/8/8/8 w - - 0 1",
    "rozwiazania": [
@@ -382,40 +414,74 @@ ZADANIA_PAKIET({
    "wyjasnienie": "We8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-24",
-   "faza": 2,
-   "poziom": 1,
+   "id": "b7b-01",
+   "faza": 7,
+   "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Domknij mata hetmanem",
    "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "8/8/8/k1K5/2R5/8/3R4/8 w - - 0 1",
+   "fen": "7k/8/4Q1K1/8/8/8/8/8 w - - 0 1",
    "rozwiazania": [
-    "d2a2"
+    "e6c8",
+    "e6e8"
    ],
    "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Wa2# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
+   "wyjasnienie": "Hc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2a-25",
-   "faza": 2,
-   "poziom": 1,
+   "id": "b7b-02",
+   "faza": 7,
+   "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
    "orientacja": "white",
-   "tytul": "Schody z dwóch wież",
+   "tytul": "Domknij mata hetmanem",
    "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "8/8/8/8/6R1/5K2/6R1/5k2 w - - 0 1",
+   "fen": "8/8/8/8/8/4K3/2Q5/5k2 w - - 0 1",
    "rozwiazania": [
-    "g2g1"
+    "c2f2"
    ],
    "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Wg1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
+   "wyjasnienie": "Hf2# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-01",
-   "faza": 2,
+   "id": "b7b-03",
+   "faza": 7,
+   "poziom": 2,
+   "motyw": "mat-w-1",
+   "typ": "ruch",
+   "orientacja": "white",
+   "tytul": "Domknij mata hetmanem",
+   "polecenie": "Zamatuj w jednym ruchu.",
+   "fen": "8/8/2K5/k7/8/3Q4/8/8 w - - 0 1",
+   "rozwiazania": [
+    "d3b5",
+    "d3a3"
+   ],
+   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
+   "wyjasnienie": "Hb5# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
+  },
+  {
+   "id": "b7b-04",
+   "faza": 7,
+   "poziom": 2,
+   "motyw": "mat-w-1",
+   "typ": "ruch",
+   "orientacja": "white",
+   "tytul": "Domknij mata hetmanem",
+   "polecenie": "Zamatuj w jednym ruchu.",
+   "fen": "1Q6/2K5/k7/8/8/8/8/8 w - - 0 1",
+   "rozwiazania": [
+    "b8b6"
+   ],
+   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
+   "wyjasnienie": "Hb6# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
+  },
+  {
+   "id": "b7b-05",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -431,8 +497,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hd8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-02",
-   "faza": 2,
+   "id": "b7b-06",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -447,8 +513,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hg7# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-03",
-   "faza": 2,
+   "id": "b7b-07",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -464,8 +530,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-04",
-   "faza": 2,
+   "id": "b7b-08",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -480,8 +546,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hb2# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-05",
-   "faza": 2,
+   "id": "b7b-09",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -497,8 +563,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Ha6# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-06",
-   "faza": 2,
+   "id": "b7b-10",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -514,8 +580,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Ha8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-07",
-   "faza": 2,
+   "id": "b7b-11",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -531,8 +597,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hh8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-08",
-   "faza": 2,
+   "id": "b7b-12",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -547,8 +613,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hh4# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-09",
-   "faza": 2,
+   "id": "b7b-13",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -563,8 +629,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "He1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-10",
-   "faza": 2,
+   "id": "b7b-14",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -579,8 +645,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hb7# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-11",
-   "faza": 2,
+   "id": "b7b-15",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -595,8 +661,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hf8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-12",
-   "faza": 2,
+   "id": "b7b-16",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -611,8 +677,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hh5# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-13",
-   "faza": 2,
+   "id": "b7b-17",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -628,8 +694,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hb7# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-14",
-   "faza": 2,
+   "id": "b7b-18",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -645,8 +711,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "He8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-15",
-   "faza": 2,
+   "id": "b7b-19",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -662,8 +728,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Ha3# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-16",
-   "faza": 2,
+   "id": "b7b-20",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -678,8 +744,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "He1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-17",
-   "faza": 2,
+   "id": "b7b-21",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -695,8 +761,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hc8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-18",
-   "faza": 2,
+   "id": "b7b-22",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -711,8 +777,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hc7# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   },
   {
-   "id": "g2b-19",
-   "faza": 2,
+   "id": "b7b-23",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -727,8 +793,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hh1# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-20",
-   "faza": 2,
+   "id": "b7b-24",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -744,8 +810,8 @@ ZADANIA_PAKIET({
    "wyjasnienie": "Hd8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
   },
   {
-   "id": "g2b-21",
-   "faza": 2,
+   "id": "b7b-25",
+   "faza": 7,
    "poziom": 2,
    "motyw": "mat-w-1",
    "typ": "ruch",
@@ -759,72 +825,6 @@ ZADANIA_PAKIET({
    ],
    "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
    "wyjasnienie": "Ha8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
-  },
-  {
-   "id": "g2b-22",
-   "faza": 2,
-   "poziom": 2,
-   "motyw": "mat-w-1",
-   "typ": "ruch",
-   "orientacja": "white",
-   "tytul": "Domknij mata hetmanem",
-   "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "3k4/8/4K3/1Q6/8/8/8/8 w - - 0 1",
-   "rozwiazania": [
-    "b5b8",
-    "b5d7"
-   ],
-   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Hb8# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
-  },
-  {
-   "id": "g2b-23",
-   "faza": 2,
-   "poziom": 2,
-   "motyw": "mat-w-1",
-   "typ": "ruch",
-   "orientacja": "white",
-   "tytul": "Domknij mata hetmanem",
-   "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "4QK1k/8/8/8/8/8/8/8 w - - 0 1",
-   "rozwiazania": [
-    "e8h5"
-   ],
-   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Hh5# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
-  },
-  {
-   "id": "g2b-24",
-   "faza": 2,
-   "poziom": 2,
-   "motyw": "mat-w-1",
-   "typ": "ruch",
-   "orientacja": "white",
-   "tytul": "Domknij mata hetmanem",
-   "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "7k/5K2/4Q3/8/8/8/8/8 w - - 0 1",
-   "rozwiazania": [
-    "e6h6",
-    "e6h3"
-   ],
-   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Hh6# — Król stoi przy krawędzi i wszystkie pola ucieczki są odcięte."
-  },
-  {
-   "id": "g2b-25",
-   "faza": 2,
-   "poziom": 2,
-   "motyw": "mat-w-1",
-   "typ": "ruch",
-   "orientacja": "white",
-   "tytul": "Domknij mata hetmanem",
-   "polecenie": "Zamatuj w jednym ruchu.",
-   "fen": "8/8/8/8/8/Q1K5/8/1k6 w - - 0 1",
-   "rozwiazania": [
-    "a3b2"
-   ],
-   "podpowiedz": "Sprawdź, gdzie król może uciec — i odetnij mu ostatnie pole.",
-   "wyjasnienie": "Hb2# — Twój król broni hetmanem, więc czarny król nie może jej zbić."
   }
  ]
 });

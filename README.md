@@ -12,10 +12,10 @@ Na telefonie warto dodać stronę do ekranu początkowego („Udostępnij" → �
 
 ## 🧩 Co to robi
 
-Towarzysz 12-tygodniowego planu nauki, podzielony na 5 faz: mat w 1 → maty techniczne → wartość bierek → taktyka → pełne zasady. Dziecko wchodzi i w 5–10 minut robi porcję zadań samo.
+Towarzysz nauki ułożony wg **Kroku 1 metody Stappenmethode**: bicie → obrona bierki → szach → mat → co się opłaca → podwójny atak → maty techniczne. Dziecko wchodzi i w 5–10 minut robi porcję zadań samo.
 
 - **Dziś** — dzienna porcja zadań, seria dni pod rząd
-- **Zadania** — 5 faz, kolejna odblokowuje się po 80% zadań rozwiązanych za pierwszym razem bez podpowiedzi
+- **Zadania** — 8 faz w kolejności metodycznej, kolejna odblokowuje się po 80% zadań rozwiązanych za pierwszym razem bez podpowiedzi
 - **Graj** — końcówki do ćwiczenia, puzzle i plansza do zabawy na lichess.org
 - **Moje** — gwiazdki, postęp faz, panel rodzica (ukryty za bramką)
 
@@ -36,16 +36,20 @@ Przytrzymaj logo na górze przez 3 sekundy **albo** kliknij „Panel rodzica" w 
 
 ## 📚 Zadania
 
-**286 zadań**, wszystkie zweryfikowane silnikiem szachowym, w paczkach w katalogu `zadania/`:
+**432 zadania**, wszystkie zweryfikowane silnikiem szachowym, w paczkach w katalogu `zadania/`.
 
-| Paczka | Zadań | Faza |
+Kolejność faz idzie za **Krokiem 1 metody Stappenmethode** — mat celowo nie jest pierwszy, bo metoda stawia go dopiero jako lekcję 7, po biciu i obronie:
+
+| Faza | Lekcja | Zadań |
 |---|---|---|
-| Zestaw startowy | 8 | 1–4 |
-| Mat w jednym ruchu | 100 | 1 |
-| Obrona przed szachem | 30 | 1 |
-| Maty techniczne | 50 | 2 |
-| Wiszące bierki | 50 | 3 |
-| Widelce skoczkiem | 48 | 4 |
+| 1. Bicie | 3 | 55 |
+| 2. Obrona bierki | 5 | 46 |
+| 3. Szach | 6 | 71 |
+| 4. Mat w jednym ruchu | 7–8 | 107 |
+| 5. Co się opłaca | 10 | 51 |
+| 6. Podwójny atak | 11 | 50 |
+| 7. Maty techniczne | 13 | 52 |
+| 8. Pełne zasady | 9, 12, 14 | — |
 
 Każde ma `poziom` 1–3. Aplikacja podnosi poprzeczkę dopiero, gdy dziecko opanuje obecny poziom (≥ 6 rozwiązanych, ≥ 80% za pierwszym razem bez podpowiedzi).
 

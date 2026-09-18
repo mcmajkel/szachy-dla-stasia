@@ -357,6 +357,123 @@ function generujWidelec({ ile, ofiara, poziom, faza, prefiks }) {
   return wynik;
 }
 
+/**
+ * LEKCJA 3 — „atak i bicie". Najprostsza umiejętność: zobaczyć, że można coś wziąć.
+ * W pozycji jest DOKŁADNIE JEDNO bicie w ogóle i jest bezpieczne.
+ */
+function generujBicie({ ile, szablon, poziom, faza, prefiks }) {
+  const wynik = [], widziane = new Set();
+  const koniec = Date.now() + BUDZET_MS;
+  while (wynik.length < ile && Date.now() < koniec) {
+    const fen = losowaPozycja(szablon, "w", { promien: 5 });
+    if (!fen || widziane.has(fen)) continue;
+    const c = new Chess(fen);
+    if (c.isCheck() || c.isGameOver()) continue;
+
+    const wszystkieBicia = c.moves({ verbose: true }).filter((m) => m.captured);
+    if (wszystkieBicia.length !== 1) continue;            // tylko jedno bicie w pozycji
+    const bezpieczne = W.biciaWiszacych(fen);
+    if (bezpieczne.length !== 1) continue;                // i jest darmowe
+
+    const ruch = wszystkieBicia[0];
+    if (ruch.piece === "k" || ruch.captured === "p") continue;
+
+    widziane.add(fen);
+    wynik.push({
+      id: `${prefiks}-${String(wynik.length + 1).padStart(2, "0")}`,
+      faza, poziom, motyw: "bicie", typ: "ruch", orientacja: "white",
+      tytul: "Zbij bierkę",
+      polecenie: "Zbij czarną bierkę.",
+      fen,
+      rozwiazania: bezpieczne,
+      podpowiedz: "Popatrz, którą czarną bierkę możesz zabrać swoją figurą.",
+      wyjasnienie: `${zapisPL(fen, bezpieczne[0])} — zabierasz bierkę (${NAZWA_PL[ruch.captured]}) i nic za to nie tracisz.`,
+    });
+  }
+  return wynik;
+}
+
+/**
+ * LEKCJA 5 — „obrona". Twoja bierka jest atakowana: uciekaj, zbij atakującego,
+ * obroń ją albo zasłoń. Silnik zwraca wszystkie ruchy, po których przeciwnik
+ * nie wygrywa już materiału.
+ */
+function generujObronaBierki({ ile, szablon, poziom, faza, prefiks }) {
+  const wynik = [], widziane = new Set();
+  const koniec = Date.now() + BUDZET_MS;
+  while (wynik.length < ile && Date.now() < koniec) {
+    const fen = losowaPozycja(szablon, "w", { promien: 5 });
+    if (!fen || widziane.has(fen)) continue;
+    const c = new Chess(fen);
+    if (c.isCheck() || c.isGameOver()) continue;
+
+    // czy czarne naprawdę grożą zabraniem czegoś za darmo?
+    let grozba;
+    try { grozba = new Chess(fen.replace(" w ", " b ")); } catch (e) { continue; }
+    if (!W.maBicieNaMaterial(grozba)) continue;
+
+    const ratujace = W.ratunki(fen);
+    if (ratujace.length < 1 || ratujace.length > 5) continue;   // 1–5 odpowiedzi
+    if (ratujace.some((m) => m.length > 4)) continue;
+
+    widziane.add(fen);
+    const wielo = ratujace.length > 1;
+    wynik.push({
+      id: `${prefiks}-${String(wynik.length + 1).padStart(2, "0")}`,
+      faza, poziom, motyw: "obron-bierke",
+      typ: wielo ? "znajdz-wszystkie" : "ruch", orientacja: "white",
+      tytul: "Ratuj swoją bierkę",
+      polecenie: wielo
+        ? `Czarne chcą coś zabrać. Znajdź WSZYSTKIE sposoby obrony (jest ich ${ratujace.length}).`
+        : "Czarne chcą zabrać twoją bierkę. Uratuj ją.",
+      fen,
+      rozwiazania: ratujace,
+      podpowiedz: "Możesz uciec, zbić napastnika, zasłonić się albo obronić swoją bierkę.",
+      wyjasnienie: wielo
+        ? `Sposobów jest ${ratujace.length}. Zagrożoną bierkę ratuje się zawsze tak samo: ucieczka, zbicie napastnika, zasłona albo obrona.`
+        : `${zapisPL(fen, ratujace[0])} — po tym ruchu czarne nie mają już nic za darmo.`,
+    });
+  }
+  return wynik;
+}
+
+/**
+ * LEKCJA 6 — „szach". Daj szacha, ale nie oddawaj przy tym figury.
+ * Świadomie bez matów: mat jest dopiero lekcją 7.
+ */
+function generujDajSzacha({ ile, szablon, poziom, faza, prefiks }) {
+  const wynik = [], widziane = new Set();
+  const koniec = Date.now() + BUDZET_MS;
+  while (wynik.length < ile && Date.now() < koniec) {
+    const fen = losowaPozycja(szablon, "w", { promien: 5 });
+    if (!fen || widziane.has(fen)) continue;
+    const c = new Chess(fen);
+    if (c.isCheck() || c.isGameOver()) continue;
+
+    const szachy = W.szachyBezpieczne(fen);
+    if (szachy.length !== 1) continue;
+    if (szachy[0].length > 4) continue;
+
+    // bez matów — mat to osobna, późniejsza lekcja
+    const c2 = new Chess(fen);
+    c2.move({ from: szachy[0].slice(0, 2), to: szachy[0].slice(2, 4) });
+    if (c2.isCheckmate()) continue;
+
+    widziane.add(fen);
+    wynik.push({
+      id: `${prefiks}-${String(wynik.length + 1).padStart(2, "0")}`,
+      faza, poziom, motyw: "daj-szacha", typ: "ruch", orientacja: "white",
+      tytul: "Daj szacha",
+      polecenie: "Zaatakuj czarnego króla — daj szacha.",
+      fen,
+      rozwiazania: szachy,
+      podpowiedz: "Szach to atak na króla. Sprawdź, która figura może go zaatakować.",
+      wyjasnienie: `${zapisPL(fen, szachy[0])} — teraz czarny król jest atakowany i czarne muszą się bronić.`,
+    });
+  }
+  return wynik;
+}
+
 /* ---------- złożenie paczek ---------- */
 
 function zapiszPaczke(nazwaPliku, meta, zadania) {
@@ -378,50 +495,65 @@ function main() {
   const katalog = path.join(__dirname, "..", "zadania");
   fs.mkdirSync(katalog, { recursive: true });
 
-  console.log("Generuje zadania (to potrwa kilkanascie sekund)...\n");
+  console.log("Generuje zadania w kolejnosci metodycznej (Stappenmethode Krok 1)...\n");
 
-  // FAZA 1 — mat w 1 (plan wymaga min. 100 pozycji) + obrona przed szachem
-  console.log("FAZA 1 — cel gry");
-  const mat1a = generujMatW1({ ile: 20, szablon: { w: "KQ", b: "K" }, poziom: 1, faza: 1, prefiks: "g1a", tytul: "Mat hetmanem" });
-  const mat1b = generujMatW1({ ile: 20, szablon: { w: "KR", b: "K" }, poziom: 1, faza: 1, prefiks: "g1b", tytul: "Mat wieżą" });
-  const mat1c = generujMatW1({ ile: 20, szablon: { w: "KQR", b: "K" }, poziom: 2, faza: 1, prefiks: "g1c", tytul: "Mat w jednym ruchu" });
-  const mat1d = generujMatW1({ ile: 20, szablon: { w: "KRB", b: "Kp" }, poziom: 3, faza: 1, prefiks: "g1d", tytul: "Mat w jednym ruchu" });
-  const mat1e = generujMatW1({ ile: 20, szablon: { w: "KQN", b: "Kp" }, poziom: 3, faza: 1, prefiks: "g1e", tytul: "Mat w jednym ruchu" });
-  const obrona = generujObrone({ ile: 18, szablon: { w: "KQ", b: "Kr" }, poziom: 2, faza: 1, prefiks: "g1f" });
-  const obrona2 = generujObrone({ ile: 12, szablon: { w: "KR", b: "Kn" }, poziom: 2, faza: 1, prefiks: "g1g" });
+  // FAZA 1 — lekcja 3: atak i bicie
+  console.log("FAZA 1 — bicie (lekcja 3)");
+  const bic1 = generujBicie({ ile: 20, szablon: { w: "KR", b: "Kn" }, poziom: 1, faza: 1, prefiks: "b1a" });
+  const bic2 = generujBicie({ ile: 20, szablon: { w: "KB", b: "Kr" }, poziom: 2, faza: 1, prefiks: "b1b" });
+  const bic3 = generujBicie({ ile: 15, szablon: { w: "KNP", b: "Kqp" }, poziom: 3, faza: 1, prefiks: "b1c" });
+  zapiszPaczke("pakiet-01-bicie.js",
+    { id: "pakiet-01", nazwa: "Bicie", faza: 1, wersja: 1 }, [...bic1, ...bic2, ...bic3]);
 
-  zapiszPaczke("pakiet-01-mat-w-1.js",
-    { id: "pakiet-01", nazwa: "Mat w jednym ruchu", faza: 1, wersja: 1 },
-    [...mat1a, ...mat1b, ...mat1c, ...mat1d, ...mat1e]);
-  zapiszPaczke("pakiet-02-obrona.js",
-    { id: "pakiet-02", nazwa: "Obrona przed szachem", faza: 1, wersja: 1 },
-    [...obrona, ...obrona2]);
+  // FAZA 2 — lekcja 5: obrona zagrozonej bierki
+  console.log("FAZA 2 — obrona bierki (lekcja 5)");
+  const obr1 = generujObronaBierki({ ile: 20, szablon: { w: "KR", b: "Kb" }, poziom: 1, faza: 2, prefiks: "b2a" });
+  const obr2 = generujObronaBierki({ ile: 20, szablon: { w: "KN", b: "Kr" }, poziom: 2, faza: 2, prefiks: "b2b" });
+  const obr3 = generujObronaBierki({ ile: 15, szablon: { w: "KRP", b: "Kqp" }, poziom: 3, faza: 2, prefiks: "b2c" });
+  zapiszPaczke("pakiet-02-obrona-bierki.js",
+    { id: "pakiet-02", nazwa: "Obrona bierki", faza: 2, wersja: 1 }, [...obr1, ...obr2, ...obr3]);
 
-  // FAZA 2 — maty techniczne: rozpoznanie pozycji końcowej techniki
-  console.log("FAZA 2 — maty techniczne");
-  const schody = generujMatW1({ ile: 25, szablon: { w: "KRR", b: "K" }, poziom: 1, faza: 2, prefiks: "g2a", tytul: "Schody z dwóch wież" });
-  const hetman = generujMatW1({ ile: 25, szablon: { w: "KQ", b: "K" }, poziom: 2, faza: 2, prefiks: "g2b", tytul: "Domknij mata hetmanem" });
-  zapiszPaczke("pakiet-03-maty-techniczne.js",
-    { id: "pakiet-03", nazwa: "Maty techniczne", faza: 2, wersja: 1 },
-    [...schody, ...hetman]);
+  // FAZA 3 — lekcja 6: szach (dawanie i obrona przed nim)
+  console.log("FAZA 3 — szach (lekcja 6)");
+  const sza1 = generujDajSzacha({ ile: 20, szablon: { w: "KR", b: "Kp" }, poziom: 1, faza: 3, prefiks: "b3a" });
+  const sza2 = generujDajSzacha({ ile: 18, szablon: { w: "KB", b: "Krp" }, poziom: 2, faza: 3, prefiks: "b3b" });
+  const odS1 = generujObrone({ ile: 18, szablon: { w: "KQ", b: "Kr" }, poziom: 2, faza: 3, prefiks: "b3c" });
+  const odS2 = generujObrone({ ile: 14, szablon: { w: "KR", b: "Kn" }, poziom: 3, faza: 3, prefiks: "b3d" });
+  zapiszPaczke("pakiet-03-szach.js",
+    { id: "pakiet-03", nazwa: "Szach", faza: 3, wersja: 1 }, [...sza1, ...sza2, ...odS1, ...odS2]);
 
-  // FAZA 3 — wartość bierek / wiszące bierki
-  console.log("FAZA 3 — co sie oplaca");
-  const wisz1 = generujWiszaca({ ile: 18, szablon: { w: "KR", b: "Kn" }, poziom: 1, faza: 3, prefiks: "g3a" });
-  const wisz2 = generujWiszaca({ ile: 18, szablon: { w: "KB", b: "Kr" }, poziom: 2, faza: 3, prefiks: "g3b" });
-  const wisz3 = generujWiszaca({ ile: 14, szablon: { w: "KNP", b: "Kqp" }, poziom: 3, faza: 3, prefiks: "g3c" });
-  zapiszPaczke("pakiet-04-wiszace-bierki.js",
-    { id: "pakiet-04", nazwa: "Wiszące bierki", faza: 3, wersja: 1 },
-    [...wisz1, ...wisz2, ...wisz3]);
+  // FAZA 4 — lekcje 7-8: mat
+  console.log("FAZA 4 — mat (lekcje 7-8)");
+  const m1 = generujMatW1({ ile: 25, szablon: { w: "KQ", b: "K" }, poziom: 1, faza: 4, prefiks: "b4a", tytul: "Mat hetmanem" });
+  const m2 = generujMatW1({ ile: 25, szablon: { w: "KR", b: "K" }, poziom: 1, faza: 4, prefiks: "b4b", tytul: "Mat wieza" });
+  const m3 = generujMatW1({ ile: 25, szablon: { w: "KQR", b: "K" }, poziom: 2, faza: 4, prefiks: "b4c", tytul: "Mat w jednym ruchu" });
+  const m4 = generujMatW1({ ile: 15, szablon: { w: "KRB", b: "Kp" }, poziom: 3, faza: 4, prefiks: "b4d", tytul: "Mat w jednym ruchu" });
+  const m5 = generujMatW1({ ile: 15, szablon: { w: "KQN", b: "Kp" }, poziom: 3, faza: 4, prefiks: "b4e", tytul: "Mat w jednym ruchu" });
+  zapiszPaczke("pakiet-04-mat-w-1.js",
+    { id: "pakiet-04", nazwa: "Mat w jednym ruchu", faza: 4, wersja: 1 }, [...m1, ...m2, ...m3, ...m4, ...m5]);
 
-  // FAZA 4 — taktyka
-  console.log("FAZA 4 — taktyka");
-  const wid1 = generujWidelec({ ile: 18, ofiara: "q", poziom: 1, faza: 4, prefiks: "g4a" });
-  const wid2 = generujWidelec({ ile: 18, ofiara: "r", poziom: 2, faza: 4, prefiks: "g4b" });
-  const wid3 = generujWidelec({ ile: 12, ofiara: "b", poziom: 3, faza: 4, prefiks: "g4c" });
-  zapiszPaczke("pakiet-05-widelce.js",
-    { id: "pakiet-05", nazwa: "Widelce skoczkiem", faza: 4, wersja: 1 },
-    [...wid1, ...wid2, ...wid3]);
+  // FAZA 5 — lekcja 10: co sie oplaca (wiszace bierki)
+  console.log("FAZA 5 — co sie oplaca (lekcja 10)");
+  const w1 = generujWiszaca({ ile: 18, szablon: { w: "KR", b: "Kn" }, poziom: 1, faza: 5, prefiks: "b5a" });
+  const w2 = generujWiszaca({ ile: 18, szablon: { w: "KB", b: "Kr" }, poziom: 2, faza: 5, prefiks: "b5b" });
+  const w3 = generujWiszaca({ ile: 14, szablon: { w: "KNP", b: "Kqp" }, poziom: 3, faza: 5, prefiks: "b5c" });
+  zapiszPaczke("pakiet-05-wiszace-bierki.js",
+    { id: "pakiet-05", nazwa: "Wiszace bierki", faza: 5, wersja: 1 }, [...w1, ...w2, ...w3]);
+
+  // FAZA 6 — lekcja 11: podwojny atak
+  console.log("FAZA 6 — podwojny atak (lekcja 11)");
+  const f1 = generujWidelec({ ile: 18, ofiara: "q", poziom: 1, faza: 6, prefiks: "b6a" });
+  const f2 = generujWidelec({ ile: 18, ofiara: "r", poziom: 2, faza: 6, prefiks: "b6b" });
+  const f3 = generujWidelec({ ile: 12, ofiara: "b", poziom: 3, faza: 6, prefiks: "b6c" });
+  zapiszPaczke("pakiet-06-widelce.js",
+    { id: "pakiet-06", nazwa: "Widelce skoczkiem", faza: 6, wersja: 1 }, [...f1, ...f2, ...f3]);
+
+  // FAZA 7 — lekcja 13: maty techniczne
+  console.log("FAZA 7 — maty techniczne (lekcja 13)");
+  const t1 = generujMatW1({ ile: 25, szablon: { w: "KRR", b: "K" }, poziom: 1, faza: 7, prefiks: "b7a", tytul: "Schody z dwoch wiez" });
+  const t2 = generujMatW1({ ile: 25, szablon: { w: "KQ", b: "K" }, poziom: 2, faza: 7, prefiks: "b7b", tytul: "Domknij mata hetmanem" });
+  zapiszPaczke("pakiet-07-maty-techniczne.js",
+    { id: "pakiet-07", nazwa: "Maty techniczne", faza: 7, wersja: 1 }, [...t1, ...t2]);
 
   console.log("\nGotowe. Teraz: node tools/waliduj.js");
 }

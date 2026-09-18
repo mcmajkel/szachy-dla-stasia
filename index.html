@@ -251,11 +251,13 @@ window.ZADANIA_PAKIET = function (pakiet) {
 </script>
 
 <script src="zadania/pakiet-00-start.js"></script>
-<script src="zadania/pakiet-01-mat-w-1.js"></script>
-<script src="zadania/pakiet-02-obrona.js"></script>
-<script src="zadania/pakiet-03-maty-techniczne.js"></script>
-<script src="zadania/pakiet-04-wiszace-bierki.js"></script>
-<script src="zadania/pakiet-05-widelce.js"></script>
+<script src="zadania/pakiet-01-bicie.js"></script>
+<script src="zadania/pakiet-02-obrona-bierki.js"></script>
+<script src="zadania/pakiet-03-szach.js"></script>
+<script src="zadania/pakiet-04-mat-w-1.js"></script>
+<script src="zadania/pakiet-05-wiszace-bierki.js"></script>
+<script src="zadania/pakiet-06-widelce.js"></script>
+<script src="zadania/pakiet-07-maty-techniczne.js"></script>
 
 <script>
 "use strict";
@@ -288,15 +290,25 @@ function pieceSvg(ch){
 var ZADANIA = window.ZADANIA || [];
 var PAKIETY = window.PAKIETY || [];
 
+/* Kolejność faz idzie za Krokiem 1 metody Stappenmethode (lekcje w nawiasach).
+   Mat celowo NIE jest pierwszy — metoda stawia go dopiero jako lekcję 7,
+   po biciu i obronie. Szczegóły: RESEARCH-I-PROGRAM.md */
 var FAZY = [
-  {id:1, nazwa:"Mat w jednym ruchu", ikona:"🏆"},
-  {id:2, nazwa:"Maty techniczne", ikona:"🪜"},
-  {id:3, nazwa:"Wartość bierek", ikona:"🎯"},
-  {id:4, nazwa:"Taktyka", ikona:"🔗"},
-  {id:5, nazwa:"Pełne zasady", ikona:"👑"}
+  {id:1, nazwa:"Bicie",            ikona:"⚔️", lekcja:"lekcja 3"},
+  {id:2, nazwa:"Obrona bierki",    ikona:"🛡️", lekcja:"lekcja 5"},
+  {id:3, nazwa:"Szach",            ikona:"⚡", lekcja:"lekcja 6"},
+  {id:4, nazwa:"Mat w jednym ruchu", ikona:"🏆", lekcja:"lekcje 7–8"},
+  {id:5, nazwa:"Co się opłaca",    ikona:"💰", lekcja:"lekcja 10"},
+  {id:6, nazwa:"Podwójny atak",    ikona:"🍴", lekcja:"lekcja 11"},
+  {id:7, nazwa:"Maty techniczne",  ikona:"🪜", lekcja:"lekcja 13"},
+  {id:8, nazwa:"Pełne zasady",     ikona:"👑", lekcja:"lekcje 9, 12, 14"}
 ];
+var OSTATNIA_FAZA = FAZY[FAZY.length-1].id;
 
-var TEMAT_LICHESS = {1:["mateIn1"],2:["mateIn1"],3:["hangingPiece"],4:["fork","pin"],5:["mateIn2"]};
+var TEMAT_LICHESS = {
+  1:["hangingPiece"], 2:["defensiveMove"], 3:["mateIn1"], 4:["mateIn1"],
+  5:["hangingPiece"], 6:["fork"], 7:["endgame"], 8:["mateIn2"]
+};
 
 // ile zadań pokazać na liście fazy (reszta pod "Pokaż więcej")
 var POKAZ_LIMIT = {};
@@ -373,7 +385,7 @@ var STORAGE_KEY = "szachy-hub-v1";
 var storageOk = true;
 
 function defaultState(){
-  return { wersja:1, zadania:{}, seria:{dni:0, ostatniDzien:null}, odblokowanaFaza:1, dzwiek:true, handicap:3 };
+  return { wersja:2, zadania:{}, seria:{dni:0, ostatniDzien:null}, odblokowanaFaza:1, dzwiek:true, handicap:3 };
 }
 function loadState(){
   try{
@@ -400,6 +412,17 @@ function saveState(){
 
 var STATE = loadState();
 
+/* Migracja v1 -> v2: kolejność faz zmieniła się na zgodną z metodyką
+   (bicie → obrona → szach → mat → ...). Postęp per zadanie przeżywa, bo id
+   są stałe, ale numer odblokowanej fazy trzeba policzyć od nowa. */
+function migruj(){
+  if(STATE.wersja >= 2) return;
+  STATE.odblokowanaFaza = 1;
+  FAZY.forEach(function(f){ checkFazaUnlock(f.id); });
+  STATE.wersja = 2;
+  saveState();
+}
+
 function todayStr(){
   var d = new Date();
   var m = String(d.getMonth()+1).padStart(2,"0");
@@ -425,7 +448,7 @@ function checkFazaUnlock(faza){
   if(tasks.length===0) return;
   var good = tasks.filter(function(t){ return STATE.zadania[t.id] && STATE.zadania[t.id].pierwszaProbaOK; }).length;
   if(good / tasks.length >= 0.8){
-    STATE.odblokowanaFaza = Math.max(STATE.odblokowanaFaza, Math.min(5, faza+1));
+    STATE.odblokowanaFaza = Math.max(STATE.odblokowanaFaza, Math.min(OSTATNIA_FAZA, faza+1));
   }
 }
 
@@ -1077,7 +1100,7 @@ function renderZadania(){
     var pct = tasks.length ? Math.round(solved/tasks.length*100) : 0;
     html += '<button class="faza-tile'+(locked?' locked':'')+'" data-faza="'+f.id+'" '+(locked||tasks.length===0?'disabled':'')+' style="border:none;">';
     html += '<span class="num">'+f.id+'</span>';
-    html += '<div class="info"><b>'+f.ikona+' '+f.nazwa+'</b><span>'+(tasks.length===0?'wkrótce nowe zadania':(solved+' / '+tasks.length+' rozwiązane'))+'</span>';
+    html += '<div class="info"><b>'+f.ikona+' '+f.nazwa+'</b><span>'+(tasks.length===0?'wkrótce nowe zadania':(solved+' / '+tasks.length+' rozwiązane'))+' · '+f.lekcja+'</span>';
     if(tasks.length>0) html += '<div class="progress-bar"><div style="width:'+pct+'%;"></div></div>';
     html += '</div>';
     html += '<span class="lock">'+(locked?'🔒':'')+'</span>';
@@ -1346,6 +1369,7 @@ function openParentPanel(){
 /* =========================================================
    START
    ========================================================= */
+migruj();
 renderDzis();
 renderZadania();
 renderGraj();

@@ -107,6 +107,59 @@ function atakujeZPola(chess, from, to) {
   return false;
 }
 
+const WARTOSC = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+
+/**
+ * Ruchy dające szacha, po których bijąca bierka nie stoi za darmo pod biciem.
+ * (Lekcja 6 metody: „daj szacha" — ale bez uczenia oddawania figur.)
+ */
+function szachyBezpieczne(fen) {
+  const c = new Chess(fen);
+  const out = [];
+  for (const m of c.moves({ verbose: true })) {
+    c.move(m);
+    if (c.isCheck()) {
+      // czy przeciwnik może zbić szachującą bierkę bez straty?
+      const zle = c.moves({ verbose: true }).some(
+        (o) => o.to === m.to && WARTOSC[o.piece] <= WARTOSC[m.piece]
+      );
+      if (!zle) out.push(uci(m));
+    }
+    c.undo();
+  }
+  return out;
+}
+
+/** czy strona na ruchu ma bicie, które wygrywa materiał */
+function maBicieNaMaterial(chess) {
+  for (const m of chess.moves({ verbose: true })) {
+    if (!m.captured) continue;
+    if (WARTOSC[m.captured] > WARTOSC[m.piece]) return true;   // bierze cenniejszą
+    chess.move(m);
+    const odbicie = chess.moves({ verbose: true }).some((r) => r.to === m.to);
+    chess.undo();
+    if (!odbicie) return true;                                  // bierze za darmo
+  }
+  return false;
+}
+
+/**
+ * Ruchy ratujące zagrożoną bierkę (lekcja 5: uciec / zbić atakującego /
+ * obronić / zasłonić). Kryterium: po naszym ruchu przeciwnik nie ma już
+ * bicia wygrywającego materiał.
+ */
+function ratunki(fen) {
+  const c = new Chess(fen);
+  const out = [];
+  for (const m of c.moves({ verbose: true })) {
+    c.move(m);
+    const przeciwnikWygrywa = maBicieNaMaterial(c);
+    c.undo();
+    if (!przeciwnikWygrywa) out.push(uci(m));
+  }
+  return out;
+}
+
 /** pola z bierkami związanymi (nie mogą się ruszyć bez straty króla/hetmana za sobą) */
 function polaZwiazane(fen) {
   const c = new Chess(fen);
@@ -166,7 +219,10 @@ function jestZwiazana(fen, pole) {
 const SILNIK = {
   "mat-w-1": matyW1,
   "obrona-przed-szachem": wszystkieLegalne,
+  "bicie": biciaWiszacych,
   "wiszaca-bierka": biciaWiszacych,
+  "obron-bierke": ratunki,
+  "daj-szacha": szachyBezpieczne,
   "widelec": widelce,
   "zwiazanie": polaZwiazane,
 };
@@ -265,4 +321,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { matyW1, wszystkieLegalne, biciaWiszacych, widelce, polaZwiazane, walidujZadanie, atakujeZPola };
+module.exports = { matyW1, wszystkieLegalne, biciaWiszacych, widelce, polaZwiazane, szachyBezpieczne, ratunki, maBicieNaMaterial, walidujZadanie, atakujeZPola, WARTOSC };
