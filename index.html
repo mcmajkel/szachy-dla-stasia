@@ -141,6 +141,12 @@ nav.bottom button.active{color:var(--accent);}
 .task-head .txt{flex:1;}
 .task-head .txt b{font-size:17px; display:block;}
 .readbtn{background:#eee0c9; border:none; border-radius:10px; width:40px; height:40px; font-size:18px; flex-shrink:0;}
+.kolor-gracza{
+  display:inline-block; margin-top:6px; padding:3px 10px; border-radius:999px;
+  font-size:13px; font-weight:700; border:2px solid var(--board-border);
+}
+.kolor-gracza.biale{background:#fdfdfd; color:#2a2a2a;}
+.kolor-gracza.czarne{background:#3a3a3a; color:#fdfdfd;}
 
 .hint-box{background:#fff3d6; border-radius:12px; padding:12px; margin:8px 0; font-size:15px;}
 .status-line{text-align:center; font-weight:700; margin:6px 0; min-height:22px;}
@@ -840,9 +846,16 @@ function openTask(taskId, session){
   var head = document.createElement("div");
   head.className = "task-head card";
   var speakBtnHtml = polishVoice ? '<button class="readbtn" id="btnRead">🔊</button>' : "";
+  // Którym kolorem gra dziecko. Zadania „obroń się przed szachem" gra się
+  // czarnymi (tak każe metodyka), więc bez tej informacji wygląda to jak
+  // ruszanie raz jednym, raz drugim kolorem.
+  var graCzarnymi = (fenToBoard(task.fen).turn === "b");
+  var odznaka = '<span class="kolor-gracza '+(graCzarnymi?"czarne":"biale")+'">'+
+                (graCzarnymi ? "Grasz czarnymi" : "Grasz białymi")+'</span>';
+
   head.innerHTML =
     '<span class="ic">'+taskIcon(task)+'</span>' +
-    '<div class="txt"><b>'+task.tytul+'</b><span>'+task.polecenie+'</span></div>' +
+    '<div class="txt"><b>'+task.tytul+'</b><span>'+task.polecenie+'</span>'+odznaka+'</div>' +
     speakBtnHtml;
   scr.appendChild(head);
   var readBtn = document.getElementById("btnRead");
@@ -941,6 +954,22 @@ function openTask(taskId, session){
       board.unhighlight(selected,"sel");
       selected = sq;
       board.highlight(sq,"sel");
+      return;
+    }
+    // Króla NIGDY się nie bije. Bez tego aplikacja animowała zbicie
+    // i chowała króla na pół sekundy — dziecko widziało, że "się da".
+    if(piece && piece.toLowerCase()==="k"){
+      board.unhighlight(selected,"sel");
+      selected = null;
+      playWrong();
+      wrongCount++;
+      flashStatus("Króla się nie bije", "bad");
+      board.highlight(sq,"bad");
+      showHintButtonIfNeeded();
+      setTimeout(function(){
+        board.unhighlight(sq,"bad");
+        statusLine.textContent = "";
+      }, 700);
       return;
     }
     var uci = selected + sq;
@@ -1164,9 +1193,13 @@ function renderDzis(){
   }
   html += '<div class="big">'+(done ? '✅' : '🎯')+'</div>';
   if(done){
-    html += '<button class="btn btn-secondary" id="btnDoneToday" disabled>✅ Zrobione! Wróć jutro</button>';
-    html += '<div style="height:10px;"></div>';
-    html += '<button class="btn btn-outline" id="btnAgain" style="width:100%;">🔁 Jeszcze raz</button>';
+    var nast = pickKolejnaPorcje(5);
+    html += '<p style="font-weight:700; font-size:19px; margin-bottom:14px;">✅ Porcja na dziś zrobiona!</p>';
+    if(nast.ids.length && !nast.powtorka){
+      html += '<button class="btn btn-primary" id="btnDalejDzis">▶️ Graj dalej</button>';
+      html += '<div style="height:10px;"></div>';
+    }
+    html += '<button class="btn btn-outline" id="btnAgain" style="width:100%;">🔁 Powtórz zrobione</button>';
   } else {
     html += '<button class="btn btn-primary" id="btnStart">Zaczynamy!</button>';
   }
@@ -1175,20 +1208,94 @@ function renderDzis(){
 
   var startBtn = document.getElementById("btnStart");
   if(startBtn) startBtn.addEventListener("click", startDailySession);
+  var dalejBtn = document.getElementById("btnDalejDzis");
+  if(dalejBtn) dalejBtn.addEventListener("click", function(){
+    uruchomPorcje(pickKolejnaPorcje(5).ids);
+  });
   var againBtn = document.getElementById("btnAgain");
-  if(againBtn) againBtn.addEventListener("click", startDailySession);
+  if(againBtn) againBtn.addEventListener("click", function(){
+    uruchomPorcje(pickPowtorke(5));
+  });
 }
-function startDailySession(){
-  var queue = pickDailyQueue();
-  if(queue.length===0){ return; }
+/* Kolejna porcja po skończeniu dziennej — najpierw to, czego dziecko
+   jeszcze nie rozwiązało, a gdy materiał się skończy, powtórki. */
+function pickKolejnaPorcje(ile){
+  ile = ile || 5;
+  var faza = STATE.odblokowanaFaza;
+  var poziom = poziomDlaFazy(faza);
+  var dostepne = ZADANIA.filter(function(z){ return z.faza>0 && z.faza<=faza; });
+  var wFazie = dostepne.filter(function(z){ return z.faza===faza; });
+
+  var nowe = shuffle(wFazie.filter(function(z){ return z.poziom===poziom && !rozwiazane(z.id); }))
+    .concat(shuffle(wFazie.filter(function(z){ return z.poziom!==poziom && !rozwiazane(z.id); })))
+    .concat(shuffle(dostepne.filter(function(z){ return z.faza!==faza && !rozwiazane(z.id); })));
+
+  if(nowe.length > 0){
+    return { ids: nowe.slice(0, ile).map(function(z){ return z.id; }), powtorka:false };
+  }
+  return { ids: pickPowtorke(ile), powtorka:true };
+}
+
+/* Powtórki: od najdawniej robionych (prosty spaced repetition). */
+function pickPowtorke(ile){
+  return ZADANIA
+    .filter(function(z){ return z.faza>0 && rozwiazane(z.id); })
+    .sort(function(a,b){
+      return (STATE.zadania[a.id].data||"").localeCompare(STATE.zadania[b.id].data||"");
+    })
+    .slice(0, ile)
+    .map(function(z){ return z.id; });
+}
+
+function uruchomPorcje(ids){
+  if(!ids || !ids.length) return;
+  var queue = ids.slice();
   var firstId = queue.shift();
   openTask(firstId, {
     queue: queue,
     onFinish: function(){
       markDailyDone();
-      showScreen("dzis");
-      renderDzis();
+      pokazKoniecPorcji();
     }
+  });
+}
+
+function startDailySession(){ uruchomPorcje(pickDailyQueue()); }
+
+/* Ekran po skończonej porcji. Bez niego dziecko lądowało na „Dziś"
+   z wyszarzonym „Wróć jutro" — czyli w ślepym zaułku. */
+function pokazKoniecPorcji(){
+  var nast = pickKolejnaPorcje(5);
+  var overlay = document.createElement("div");
+  overlay.className = "explain-overlay";
+
+  var tresc = nast.powtorka
+    ? "Nowych zadań na razie nie ma. Możemy powtórzyć te, które już umiesz — powtórka też uczy."
+    : "Porcja skończona. Chcesz grać dalej?";
+  var etykieta = nast.powtorka ? "🔁 Powtórzmy stare →" : "▶️ Graj dalej →";
+
+  overlay.innerHTML =
+    '<div class="explain-sheet">' +
+      '<div class="big-ok">🎉</div>' +
+      '<h2>Zrobione!</h2>' +
+      '<p>'+tresc+'</p>' +
+      '<div class="actions">' +
+        (nast.ids.length ? '<button class="btn btn-primary" id="btnDalejPorcja">'+etykieta+'</button>' : '') +
+        '<button class="btn btn-secondary" id="btnKoniecDzis">😴 Koniec na dziś</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var dalej = document.getElementById("btnDalejPorcja");
+  if(dalej) dalej.addEventListener("click", function(){
+    overlay.remove();
+    uruchomPorcje(nast.ids);
+  });
+  document.getElementById("btnKoniecDzis").addEventListener("click", function(){
+    overlay.remove();
+    TASK_SESSION = null;
+    showScreen("dzis");
+    renderDzis();
   });
 }
 
