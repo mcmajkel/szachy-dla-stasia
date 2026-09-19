@@ -16,14 +16,18 @@ Towarzysz nauki ułożony wg **Kroku 1 metody Stappenmethode**: bicie → obrona
 
 - **Dziś** — dzienna porcja zadań, seria dni pod rząd
 - **Zadania** — 8 faz w kolejności metodycznej, kolejna odblokowuje się po 80% zadań rozwiązanych za pierwszym razem bez podpowiedzi
-- **Graj** — końcówki do ćwiczenia, puzzle i plansza do zabawy na lichess.org
+- **Graj** — końcówki, puzzle i plansza do zabawy na lichess.org (**domyślnie wyłączone**, włącza się w panelu rodzica)
 - **Moje** — gwiazdki, postęp faz, panel rodzica (ukryty za bramką)
 
 Podpowiedź pojawia się dopiero po trzeciej nieudanej próbie — i to jako przycisk, nie od razu jako tekst.
 
 ## 👨‍👩‍👧 Panel rodzica
 
-Przytrzymaj logo na górze przez 3 sekundy **albo** kliknij „Panel rodzica" w zakładce Moje i odpowiedz na pytanie z mnożenia. W środku: tabela prób i podpowiedzi dla każdego zadania, eksport/import postępów w JSON, reset i notatka o szczeblu handicapu.
+Przytrzymaj logo na górze przez 3 sekundy **albo** kliknij „Panel rodzica" w zakładce Moje i odpowiedz na pytanie z mnożenia. W środku: tabela prób i podpowiedzi dla każdego zadania, przełącznik wyjść na lichess, eksport/import postępów w JSON, reset i notatka o szczeblu handicapu.
+
+### Dlaczego lichess jest domyślnie wyłączony
+
+Analiza i edytor na lichess **pozwalają ruszać obydwoma kolorami i nie pilnują zasad** — to narzędzia do analizy, nie do gry. Sześciolatek, który trafi tam z aplikacji, widzi „szachy, w których wszystko wolno", łącznie z biciem króla. Przełącznik w panelu rodzica włącza całość: zakładkę „Graj" i przycisk „Zagraj to na lichess" po rozwiązanym zadaniu. Wyłączony = zakładka znika z dolnego paska.
 
 ## 🔧 Jak to jest zrobione
 

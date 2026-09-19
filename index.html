@@ -53,6 +53,9 @@ nav.bottom button{
 }
 nav.bottom button .ic{font-size:24px;}
 nav.bottom button.active{color:var(--accent);}
+/* gdy wyjścia na lichess są wyłączone — pasek ma trzy pozycje, nie cztery */
+nav.bottom.bez-graj{grid-template-columns:repeat(3,1fr);}
+nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
 
 .card{background:var(--card); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.08);}
 .btn{
@@ -378,7 +381,7 @@ window.ZADANIA_PAKIET = function (pakiet) {
 var PIECE_SHAPES = {
   p: '<circle cx="50" cy="30" r="13"/><path d="M38,46 C38,60 30,66 30,78 L70,78 C70,66 62,60 62,46 Z"/><rect x="24" y="78" width="52" height="10" rx="3"/>',
   r: '<rect x="22" y="18" width="12" height="13"/><rect x="44" y="18" width="12" height="13"/><rect x="66" y="18" width="12" height="13"/><rect x="22" y="30" width="56" height="7"/><path d="M30,37 L70,37 L66,74 L34,74 Z"/><rect x="22" y="74" width="56" height="10" rx="3"/>',
-  n: '<path d="M22,84 L22,72 Q22,62 30,57 Q26,52 28,44 Q30,36 38,30 Q44,22 54,22 Q64,22 68,30 Q70,34 66,36 Q62,32 56,32 Q60,36 58,40 Q66,40 70,46 Q74,52 70,56 Q66,52 60,52 Q62,58 58,62 Q64,64 66,70 Q68,76 64,84 Z"/><circle cx="44" cy="36" r="2.6" class="eye"/><rect x="20" y="84" width="52" height="8" rx="3"/>',
+  n: '<path d="M30,84 C30,72 31,64 38,59 L18,63 C16,58 18,52 24,47 C29,41 35,35 43,29 C49,24 55,20 61,19 L63,7 L73,21 C79,31 81,46 77,60 C75,68 74,76 74,84 Z"/><circle cx="42" cy="39" r="2.8" class="eye"/><rect x="22" y="84" width="56" height="8" rx="3"/>',
   b: '<circle cx="50" cy="17" r="6"/><path d="M50,24 C35,30 32,50 40,66 C34,70 30,74 26,78 L74,78 C70,74 66,70 60,66 C68,50 65,30 50,24 Z"/><line x1="43" y1="33" x2="57" y2="45" class="slit"/><rect x="24" y="78" width="52" height="10" rx="3"/>',
   q: '<circle cx="24" cy="22" r="5"/><circle cx="38" cy="16" r="5"/><circle cx="50" cy="13" r="5"/><circle cx="62" cy="16" r="5"/><circle cx="76" cy="22" r="5"/><path d="M22,28 L30,54 L38,32 L46,54 L50,34 L54,54 L62,32 L70,54 L78,28 L74,62 Q50,70 26,62 Z"/><path d="M27,60 C30,68 30,72 34,78 L66,78 C70,72 70,68 73,60 Z"/><rect x="22" y="78" width="56" height="10" rx="3"/>',
   k: '<rect x="47" y="8" width="6" height="16"/><rect x="41" y="14" width="18" height="6"/><circle cx="50" cy="32" r="9"/><path d="M36,40 C30,50 28,60 32,70 C28,72 26,76 24,82 L76,82 C74,76 72,72 68,70 C72,60 70,50 64,40 Z"/><rect x="30" y="52" width="40" height="8" rx="2" class="band"/><rect x="22" y="82" width="56" height="8" rx="3"/>'
@@ -494,7 +497,14 @@ var STORAGE_KEY = "szachy-hub-v1";
 var storageOk = true;
 
 function defaultState(){
-  return { wersja:2, zadania:{}, seria:{dni:0, ostatniDzien:null}, odblokowanaFaza:1, dzwiek:true, handicap:3 };
+  return {
+    wersja:2, zadania:{}, seria:{dni:0, ostatniDzien:null}, odblokowanaFaza:1,
+    dzwiek:true, handicap:3,
+    // Wyjścia na lichess są domyślnie WYŁĄCZONE. Analiza i edytor lichess
+    // pozwalają ruszać obydwoma kolorami i nie pilnują zasad — dla 6-latka
+    // to zaprzeczenie tego, czego uczy się w zadaniach. Rodzic włącza w panelu.
+    lichess:false
+  };
 }
 function loadState(){
   try{
@@ -1060,7 +1070,9 @@ function showExplanation(task){
       '<p>'+task.wyjasnienie+'</p>' +
       '<div class="actions">' +
         '<button class="btn btn-primary" id="btnNext">Dalej →</button>' +
-        '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>' +
+        (STATE.lichess
+          ? '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>'
+          : '') +
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -1087,6 +1099,19 @@ function nextAfterTask(task){
    NAWIGACJA / ZAKŁADKI
    ========================================================= */
 var TABS = ["dzis","zadania","graj","moje"];
+
+/* Pokazuje/ukrywa zakładkę „Graj" zależnie od przełącznika w panelu rodzica.
+   Wywoływane przy starcie i po każdej zmianie ustawienia. */
+function odswiezNawigacje(){
+  var nav = document.querySelector("nav.bottom");
+  nav.classList.toggle("bez-graj", !STATE.lichess);
+  // jeśli dziecko stoi akurat na ukrytej zakładce — przenieś na „Dziś"
+  var graj = document.getElementById("screen-graj");
+  if(!STATE.lichess && graj && graj.classList.contains("active")){
+    showScreen("dzis");
+    renderDzis();
+  }
+}
 function showScreen(name){
   ["dzis","zadania","graj","moje","task"].forEach(function(n){
     var el = document.getElementById("screen-"+n);
@@ -1524,6 +1549,9 @@ function openParentPanel(){
       '<button class="close-x" id="parentClose">✕</button>' +
       '<h3>Panel rodzica</h3>' +
       '<table><thead><tr><th>Zadanie</th><th>Prób</th><th>Podp.</th><th>Data</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4">Brak danych</td></tr>')+'</tbody></table>' +
+      '<div class="toggle-row"><span>♞ Wyjścia na lichess.org</span>' +
+        '<button class="switch'+(STATE.lichess?' on':'')+'" id="lichessToggle"><span class="knob"></span></button></div>' +
+      '<p class="small-muted">Analiza i edytor na lichess pozwalają ruszać obydwoma kolorami i nie pilnują zasad — dla małego dziecka bywa to mylące. Wyłączone = znika zakładka „Graj" i przycisk „Zagraj to na lichess".</p>' +
       '<p class="small-muted">Szczebel handicapu (tylko notatka, aplikacja go nie używa):</p>' +
       '<input type="range" min="1" max="6" value="'+STATE.handicap+'" class="slider" id="handicapSlider">' +
       '<p class="small-muted" style="text-align:center;">Poziom: <b id="handicapVal">'+STATE.handicap+'</b></p>' +
@@ -1537,6 +1565,14 @@ function openParentPanel(){
     '</div>';
   document.body.appendChild(modal);
   document.getElementById("parentClose").addEventListener("click", function(){ modal.remove(); });
+  document.getElementById("lichessToggle").addEventListener("click", function(){
+    STATE.lichess = !STATE.lichess;
+    saveState();
+    odswiezNawigacje();
+    modal.remove();
+    renderMoje();
+    openParentPanel();
+  });
   document.getElementById("handicapSlider").addEventListener("input", function(e){
     STATE.handicap = parseInt(e.target.value,10);
     document.getElementById("handicapVal").textContent = STATE.handicap;
@@ -1582,6 +1618,7 @@ function openParentPanel(){
    START
    ========================================================= */
 migruj();
+odswiezNawigacje();
 renderDzis();
 renderZadania();
 renderGraj();
