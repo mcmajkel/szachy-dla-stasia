@@ -273,6 +273,41 @@ nav.bottom button.active{color:var(--accent);}
   nav.bottom button .ic{font-size:20px;}
   main{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
 }
+
+/* --- TELEFON POZIOMO (np. iPhone 17 obrócony: 874×402) ---
+   Szeroko i bardzo nisko. Układ jednokolumnowy dawał tu planszę 212 px
+   (pole 27 px — za mało na palec) i chował ją pod paskiem nawigacji.
+   Ratunek: plansza obok treści, zero zbędnego chromu, wysokość rządzi. */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 640px){
+  header.top{display:none;}                 /* tytuł zbędny przy tak niskim oknie */
+  .tylko-z-logo{display:none;}              /* podpowiedź o logo, którego tu nie ma */
+  main{padding:6px 12px; padding-bottom:calc(52px + env(safe-area-inset-bottom));}
+  nav.bottom button{min-height:44px; font-size:11px; padding:4px 2px 2px;}
+  nav.bottom button .ic{font-size:18px;}
+
+  #screen-task{
+    display:grid;
+    grid-template-columns:auto minmax(200px, 1fr);
+    column-gap:16px;
+    align-items:start;
+  }
+  /* plansza od samej góry — "Wróć" ląduje w prawej kolumnie, nie nad planszą */
+  #screen-task .board-wrap{grid-column:1; grid-row:1 / span 5; margin:0;}
+  #screen-task .back-link{grid-column:2; grid-row:1; padding:0 0 4px;}
+  #screen-task .task-head,
+  #screen-task .counter-wrap,
+  #screen-task .status-line,
+  #screen-task .hint-area{grid-column:2;}
+  #screen-task .task-head{padding:10px; margin-bottom:6px;}
+  #screen-task .task-head .ic{font-size:22px;}
+
+  .board{width:min(100vh - 62px, 52vw, 420px);}
+
+  .explain-overlay{align-items:center;}
+  .explain-sheet{max-width:560px; max-height:92vh; border-radius:16px; padding:14px;}
+  .explain-sheet .big-ok{font-size:30px; margin-bottom:2px;}
+  .explain-sheet h2{font-size:20px;}
+}
 </style>
 </head>
 <body>
@@ -1313,7 +1348,7 @@ function renderMoje(){
   html += '</div>';
 
   html += '<div class="card" style="text-align:center;">';
-  html += '<p class="small-muted">Przytrzymaj logo na górze przez 3 sekundy, żeby otworzyć panel rodzica.</p>';
+  html += '<p class="small-muted tylko-z-logo">Panel rodzica otwiera też przytrzymanie logo na górze przez 3 sekundy.</p>';
   html += '<button class="btn btn-outline" id="btnParentGate" style="width:100%;">🔐 Panel rodzica</button>';
   html += '</div>';
 
