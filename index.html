@@ -1090,11 +1090,7 @@ function showExplanation(task){
       '<p>'+task.wyjasnienie+'</p>' +
       '<div class="actions">' +
         '<button class="btn btn-primary" id="btnNext">Dalej →</button>' +
-        (STATE.lichess
-          ? (navigator.onLine
-            ? '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>'
-            : '<p class="net-note">📡 Lichess potrzebuje internetu</p>')
-          : '') +
+        (STATE.lichess ? '<div id="lichessSlot" data-url="'+lichessUrl+'">'+lichessPrzycisk(lichessUrl)+'</div>' : '') +
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -1476,8 +1472,18 @@ function linkRow(icon, title, sub, href, online){
   }
   return '<a class="play-link" href="'+href+'" target="_blank" rel="noopener"><span class="ic">'+icon+'</span><div><b>'+title+'</b><span>'+sub+'</span></div></a>';
 }
-window.addEventListener("online", function(){ if(document.getElementById("screen-graj").classList.contains("active")) renderGraj(); });
-window.addEventListener("offline", function(){ if(document.getElementById("screen-graj").classList.contains("active")) renderGraj(); });
+function lichessPrzycisk(url){
+  return navigator.onLine
+    ? '<a class="btn btn-secondary" id="btnLichess" href="'+url+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>'
+    : '<p class="net-note">📡 Lichess potrzebuje internetu</p>';
+}
+function poZmianieSieci(){
+  if(document.getElementById("screen-graj").classList.contains("active")) renderGraj();
+  var slot = document.getElementById("lichessSlot");
+  if(slot) slot.innerHTML = lichessPrzycisk(slot.dataset.url);
+}
+window.addEventListener("online", poZmianieSieci);
+window.addEventListener("offline", poZmianieSieci);
 
 /* =========================================================
    EKRAN „MOJE"
@@ -1667,8 +1673,8 @@ renderMoje();
 showScreen("dzis");
 
 /* Offline: sw.js trzyma kopię aplikacji i zadań. Działa tylko na https:// i localhost. */
-if("serviceWorker" in navigator && location.protocol !== "file:"){
-  navigator.serviceWorker.register("sw.js").catch(function(){});
+if("serviceWorker" in navigator && window.isSecureContext){
+  navigator.serviceWorker.register("sw.js").catch(function(err){ console.warn("Tryb offline niedostępny:", err); });
 }
 </script>
 </body>

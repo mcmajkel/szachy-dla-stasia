@@ -286,6 +286,27 @@ function wczytajPaczke(plik) {
   return zadania;
 }
 
+/* Pilnuje, żeby paczka nie zginęła offline: każdy plik z zadania/ musi być w <script> w index.html
+   i na liście PLIKI w sw.js, a każdy wpis z PLIKI musi istnieć. Zwraca listę błędów. */
+function sprawdzSpojnoscPlikow() {
+  const KORZEN = path.join(__dirname, "..");
+  const html = fs.readFileSync(path.join(KORZEN, "index.html"), "utf8");
+  const sw = fs.readFileSync(path.join(KORZEN, "sw.js"), "utf8");
+  const blokPliki = (sw.match(/var PLIKI = \[([\s\S]*?)\];/) || [])[1];
+  if (!blokPliki) return ["sw.js: nie znaleziono listy PLIKI"];
+  const wSw = new Set([...blokPliki.matchAll(/"([^"]+)"/g)].map((m) => m[1]));
+  const wHtml = new Set([...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]));
+  const naDysku = fs.readdirSync(KATALOG_ZADAN).filter((f) => f.endsWith(".js")).map((f) => "zadania/" + f);
+  const bledy = [];
+  for (const f of naDysku) {
+    if (!wHtml.has(f)) bledy.push(`${f}: brak <script> w index.html`);
+    if (!wSw.has(f)) bledy.push(`${f}: brak na liscie PLIKI w sw.js (nie zadziala offline)`);
+  }
+  for (const f of wHtml) if (!wSw.has(f)) bledy.push(`${f}: jest w index.html, brak w PLIKI w sw.js`);
+  for (const f of wSw) if (!fs.existsSync(path.join(KORZEN, f))) bledy.push(`sw.js: PLIKI zawiera nieistniejacy ${f}`);
+  return bledy;
+}
+
 function main() {
   let pliki = process.argv.slice(2);
   if (!pliki.length) {
@@ -313,6 +334,14 @@ function main() {
         console.log(`  ⚠ ${z.id}: ${ostrzezenia.join(" | ")}`);
       }
     }
+  }
+
+  if (!process.argv[2]) {
+    const bledyPlikow = sprawdzSpojnoscPlikow();
+    console.log(`\n=== index.html / sw.js / zadania/ ===`);
+    bledyPlikow.forEach((b) => console.log(`  ✗ ${b}`));
+    if (!bledyPlikow.length) console.log("  ✓ listy plikow sie zgadzaja");
+    zBledami += bledyPlikow.length;
   }
 
   console.log(`\n--- PODSUMOWANIE ---`);
