@@ -4,6 +4,8 @@ Status: **szkic do akceptacji** · Data: 2026-10-30 · Dotyczy: `index.html`
 
 ## TL;DR
 
+> **Zmiana 2026-10-30:** domyślnie logowanie **e-mailem i hasłem** (`POST /auth/v1/token?grant_type=password`). Wbudowany mailer Supabase nie pozwala zmienić szablonu na kod, a własny SMTP to dodatkowa konfiguracja. Hasło wpisuje się w tej aplikacji, w której ma być sesja — więc działa też z ikony iOS, tak jak kod. Logowanie kodem zostaje jako opcja („Zaloguj kodem z maila”), działa po ustawieniu SMTP i szablonu z `{{ .Token }}`.
+
 - Logowanie **6-cyfrowym kodem z maila** (Supabase Auth, email OTP). Nie link — link na iPhonie otwiera Safari, a ikona na ekranie początkowym ma **osobny** `localStorage`, więc sesja wylądowałaby w złym miejscu.
 - Konta zakłada **tylko rodzic w panelu Supabase**. Rejestracja z aplikacji wyłączona.
 - Postępy dalej zapisują się w `localStorage` (`szachy-hub-v1`) — chmura to kopia i synchronizacja, nie zamiennik. Bez sieci wszystko działa jak dziś.

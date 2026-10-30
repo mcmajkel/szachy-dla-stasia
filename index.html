@@ -1665,7 +1665,7 @@ function openParentPanel(){
 }
 
 /* =========================================================
-   CHMURA — logowanie kodem z maila + synchronizacja (Supabase)
+   CHMURA — logowanie (hasło albo kod z maila) + synchronizacja (Supabase)
    Spec: SPEC-LOGOWANIE.md. Bez bibliotek: REST przez fetch.
    localStorage zostaje źródłem prawdy na urządzeniu; chmura to kopia,
    z którą stan jest scalany (scal.js) przy starcie, powrocie do aplikacji
@@ -1679,7 +1679,8 @@ var AUTH_KEY = "szachy-auth-v1";
 
 var AUTH = null;           // {access_token, refresh_token, expires_at, user_id, email, ostatniSync}
 var syncTimer = null, syncTrwa = false, syncPonownie = false;
-var chmuraFormularz = {email:"", krok:"email", blad:"", info:""};
+// krok: "haslo" (domyślnie) | "email" (kod: podaj adres) | "kod" (kod: wpisz kod)
+var chmuraFormularz = {email:"", krok:"haslo", blad:"", info:""};
 
 function chmuraWlaczona(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
 function wczytajAuth(){
@@ -1754,6 +1755,10 @@ function zSesja(sciezka, opcje){
   });
 }
 
+function zalogujHaslem(email, haslo){
+  return zapytanie("/auth/v1/token?grant_type=password", {metoda:"POST", dane:{email: email, password: haslo}})
+    .then(function(d){ ustawSesje(d, email); });
+}
 function wyslijKod(email){
   // create_user:false — kod dostaje tylko konto założone wcześniej przez rodzica w panelu Supabase.
   return zapytanie("/auth/v1/otp", {metoda:"POST", dane:{email: email, create_user: false}});
@@ -1839,7 +1844,8 @@ function godzinaSync(ms){
 function komunikatBledu(e, krok){
   if(!e.status) return "Brak połączenia z internetem.";
   if(e.status === 429) return "Za dużo prób. Poczekaj minutę i spróbuj ponownie.";
-  if(krok === "email") return "Ten adres nie ma dostępu. Konto zakłada rodzic w panelu Supabase.";
+  if(krok === "haslo") return "Nieprawidłowy e-mail lub hasło.";
+  if(krok === "email") return "Nie udało się wysłać kodu. Kod działa tylko z ustawionym SMTP w Supabase — zaloguj się hasłem.";
   return "Kod jest niepoprawny albo wygasł. Wyślij nowy.";
 }
 
@@ -1855,10 +1861,17 @@ function renderChmura(){
         '<button class="btn btn-outline" id="btnSyncTeraz" style="flex:1;">🔄 Synchronizuj</button>' +
         '<button class="btn btn-outline" id="btnWyloguj" style="flex:1;">Wyloguj</button>' +
       '</div>';
-  } else if(f.krok === "email"){
+  } else if(f.krok === "haslo"){
     html += '<p class="small-muted">Postępy zapiszą się w chmurze i pojawią na każdym urządzeniu, na którym się zalogujesz.</p>' +
+      '<input type="email" id="chmuraEmail" autocomplete="username" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
+      '<input type="password" id="chmuraHaslo" autocomplete="current-password" placeholder="hasło" style="margin-top:8px;">' +
+      '<button class="btn btn-secondary" id="btnZalogujHaslem" style="width:100%;margin-top:8px;">Zaloguj</button>' +
+      '<button class="btn btn-outline" id="btnTrybKod" style="width:100%;margin-top:8px;">Zaloguj kodem z maila</button>';
+  } else if(f.krok === "email"){
+    html += '<p class="small-muted">Kod przyjdzie mailem. Wymaga ustawionego SMTP w Supabase.</p>' +
       '<input type="email" id="chmuraEmail" autocomplete="email" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
-      '<button class="btn btn-secondary" id="btnWyslijKod" style="width:100%;margin-top:8px;">Wyślij kod</button>';
+      '<button class="btn btn-secondary" id="btnWyslijKod" style="width:100%;margin-top:8px;">Wyślij kod</button>' +
+      '<button class="btn btn-outline" id="btnTrybHaslo" style="width:100%;margin-top:8px;">Zaloguj hasłem</button>';
   } else {
     html += '<p class="small-muted">Wpisz kod z maila wysłanego na <b>'+escapeHtml(f.email)+'</b>.</p>' +
       '<input type="text" id="chmuraKod" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="kod z maila">' +
@@ -1889,12 +1902,26 @@ function renderChmura(){
   });
   klik("btnNowyKod", wyslij);
   klik("btnInnyEmail", function(){ f.krok = "email"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnTrybKod", function(){ f.krok = "email"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnTrybHaslo", function(){ f.krok = "haslo"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnZalogujHaslem", function(){
+    f.email = document.getElementById("chmuraEmail").value.trim().toLowerCase();
+    var haslo = document.getElementById("chmuraHaslo").value;
+    if(!f.email || !haslo){ f.blad = "Wpisz e-mail i hasło."; renderChmura(); return; }
+    f.blad = ""; f.info = "Loguję…"; renderChmura();
+    zalogujHaslem(f.email, haslo).then(function(){
+      f.info = "";
+      return synchronizuj();
+    }).catch(function(e){
+      f.info = ""; f.blad = komunikatBledu(e, "haslo");
+    }).then(renderChmura);
+  });
   klik("btnZaloguj", function(){
     var kod = document.getElementById("chmuraKod").value.replace(/\s/g,"");
     if(!kod){ f.blad = "Wpisz kod z maila."; renderChmura(); return; }
     f.blad = ""; f.info = "Loguję…"; renderChmura();
     zalogujKodem(f.email, kod).then(function(){
-      f.krok = "email"; f.info = "";
+      f.krok = "haslo"; f.info = "";
       return synchronizuj();
     }).catch(function(e){
       f.info = ""; f.blad = komunikatBledu(e, "kod");
@@ -1903,7 +1930,7 @@ function renderChmura(){
   klik("btnSyncTeraz", function(){ f.info = "Synchronizuję…"; renderChmura(); synchronizuj().then(function(){ f.info = ""; renderChmura(); }); });
   klik("btnWyloguj", function(){
     if(!confirm("Wylogować na tym urządzeniu? Postępy na nim zostaną.")) return;
-    wyloguj(); f.info = ""; renderChmura();
+    wyloguj(); f.krok = "haslo"; f.info = ""; renderChmura();
   });
 }
 
