@@ -15,7 +15,7 @@ Figury są jedną, wbudowaną grafiką (`PIECE_SHAPES` w `index.html`). Rodzic n
 
 ## Wymagania
 **P0**
-- Zestawy: `Domyślny` (obecne własne SVG), `RhosGFX` (CC0), `Fantasy` (MIT), `Konie` (horsey, CC BY-NC-SA 4.0). Pliki: `figury/<zestaw>/{w,b}{K,Q,R,B,N,P}.svg`.
+- Zestawy: `Domyślny` (obecne własne SVG), `RhosGFX` (CC0), `Fantasy` (MIT), `Konie` (horsey, CC BY-NC-SA 4.0), `Halloween` (MIT, PNG 500×500). Pliki: `figury/<zestaw>/{w,b}{K,Q,R,B,N,P}.svg` (Halloween: `.png`).
 - `pieceSvg(ch)` zwraca figurę z wybranego zestawu; dla zestawu „Domyślny" bez zmian.
 - Figury z plików ładowane przez `<img>` (nie inline), bo pliki mają własne `id` i `<style>`, które kolidowałyby na jednej stronie.
 - Panel rodzica: sekcja „Wygląd figur" z podglądem (król, skoczek, pionek) przy każdym zestawie.
@@ -34,9 +34,8 @@ Kryteria akceptacji:
 
 ## Metryki
 - Zestaw można zmienić w ≤ 2 tapnięciach od panelu rodzica.
-- Rozmiar cache offline rośnie o ≤ 400 KB (obecnie ~330 KB figur w 3 zestawach, do zmierzenia po minimalizacji).
+- Rozmiar cache offline rośnie o ≤ 1 MB (obecnie ~900 KB figur w 4 zestawach, do zmierzenia).
 
 ## Pytania otwarte
-- **Halloween**: w repozytorium lila nie ma zestawu `halloween` (HTTP 404), a blog HollowLeaf z jego wzmianką i strona RhosGFX są zablokowane w sieci sesji. Potrzebny link do źródła i licencji.
 - Czy „Konie" (CC BY-NC-SA, niekomercyjna) są akceptowalne? Aplikacja jest rodzinna i bez reklam, więc tak, ale zmiany tych plików musiałyby mieć tę samą licencję.
 - Czy nazwy zestawów po polsku wystarczą, czy dodać obrazek-ikonę.
