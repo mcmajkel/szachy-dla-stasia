@@ -1665,7 +1665,7 @@ function openParentPanel(){
 }
 
 /* =========================================================
-   CHMURA — logowanie (hasło albo kod z maila) + synchronizacja (Supabase)
+   CHMURA — logowanie (hasło albo link z maila) + synchronizacja (Supabase)
    Spec: SPEC-LOGOWANIE.md. Bez bibliotek: REST przez fetch.
    localStorage zostaje źródłem prawdy na urządzeniu; chmura to kopia,
    z którą stan jest scalany (scal.js) przy starcie, powrocie do aplikacji
@@ -1679,7 +1679,7 @@ var AUTH_KEY = "szachy-auth-v1";
 
 var AUTH = null;           // {access_token, refresh_token, expires_at, user_id, email, ostatniSync}
 var syncTimer = null, syncTrwa = false, syncPonownie = false;
-// krok: "haslo" (domyślnie) | "email" (kod: podaj adres) | "kod" (kod: wpisz kod)
+// krok: "haslo" (domyślnie) | "link" (logowanie linkiem z maila)
 var chmuraFormularz = {email:"", krok:"haslo", blad:"", info:""};
 
 function chmuraWlaczona(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
@@ -1759,13 +1759,38 @@ function zalogujHaslem(email, haslo){
   return zapytanie("/auth/v1/token?grant_type=password", {metoda:"POST", dane:{email: email, password: haslo}})
     .then(function(d){ ustawSesje(d, email); });
 }
-function wyslijKod(email){
-  // create_user:false — kod dostaje tylko konto założone wcześniej przez rodzica w panelu Supabase.
-  return zapytanie("/auth/v1/otp", {metoda:"POST", dane:{email: email, create_user: false}});
+// Link z domyślnego szablonu Supabase (działa bez własnego SMTP, ale tylko na adresy
+// członków organizacji). Link otwiera się w przeglądarce — na iOS to Safari, nie ikona
+// z ekranu początkowego, która ma osobny magazyn. Dlatego domyślne jest hasło.
+function wyslijLink(email){
+  var powrot = location.origin + location.pathname;
+  // create_user:false — link dostaje tylko konto założone wcześniej przez rodzica w panelu Supabase.
+  return zapytanie("/auth/v1/otp?redirect_to=" + encodeURIComponent(powrot), {metoda:"POST", dane:{email: email, create_user: false}});
 }
-function zalogujKodem(email, kod){
-  return zapytanie("/auth/v1/verify", {metoda:"POST", dane:{type:"email", email: email, token: kod}})
-    .then(function(d){ ustawSesje(d, email); });
+// Po kliknięciu linku Supabase wraca na stronę z sesją w adresie: #access_token=…&refresh_token=…
+function odbierzSesjeZLinku(){
+  if(!location.hash || location.hash.length < 2) return Promise.resolve();
+  var p = new URLSearchParams(location.hash.slice(1));
+  if(!p.get("access_token") && !p.get("error")) return Promise.resolve();
+  history.replaceState(null, "", location.pathname + location.search); // tokeny nie zostają w adresie
+  if(p.get("error")){
+    chmuraFormularz.krok = "link";
+    chmuraFormularz.blad = "Link nie zadziałał (" + (p.get("error_description") || p.get("error")).replace(/\+/g," ") + "). Wyślij nowy albo zaloguj się hasłem.";
+    return Promise.resolve();
+  }
+  var token = p.get("access_token");
+  return zapytanie("/auth/v1/user", {token: token}).then(function(u){
+    ustawSesje({
+      access_token: token,
+      refresh_token: p.get("refresh_token"),
+      expires_at: parseInt(p.get("expires_at"),10) || undefined,
+      expires_in: parseInt(p.get("expires_in"),10) || 3600,
+      user: u
+    });
+  }).catch(function(){
+    chmuraFormularz.krok = "link";
+    chmuraFormularz.blad = "Nie udało się dokończyć logowania z linku. Spróbuj ponownie.";
+  });
 }
 function wyloguj(){
   var token = AUTH && AUTH.access_token;
@@ -1845,8 +1870,7 @@ function komunikatBledu(e, krok){
   if(!e.status) return "Brak połączenia z internetem.";
   if(e.status === 429) return "Za dużo prób. Poczekaj minutę i spróbuj ponownie.";
   if(krok === "haslo") return "Nieprawidłowy e-mail lub hasło.";
-  if(krok === "email") return "Nie udało się wysłać kodu. Kod działa tylko z ustawionym SMTP w Supabase — zaloguj się hasłem.";
-  return "Kod jest niepoprawny albo wygasł. Wyślij nowy.";
+  return "Nie udało się wysłać linku. Ten adres nie ma konta albo wbudowana poczta Supabase do niego nie wysyła — zaloguj się hasłem.";
 }
 
 function renderChmura(){
@@ -1866,20 +1890,12 @@ function renderChmura(){
       '<input type="email" id="chmuraEmail" autocomplete="username" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
       '<input type="password" id="chmuraHaslo" autocomplete="current-password" placeholder="hasło" style="margin-top:8px;">' +
       '<button class="btn btn-secondary" id="btnZalogujHaslem" style="width:100%;margin-top:8px;">Zaloguj</button>' +
-      '<button class="btn btn-outline" id="btnTrybKod" style="width:100%;margin-top:8px;">Zaloguj kodem z maila</button>';
-  } else if(f.krok === "email"){
-    html += '<p class="small-muted">Kod przyjdzie mailem. Wymaga ustawionego SMTP w Supabase.</p>' +
-      '<input type="email" id="chmuraEmail" autocomplete="email" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
-      '<button class="btn btn-secondary" id="btnWyslijKod" style="width:100%;margin-top:8px;">Wyślij kod</button>' +
-      '<button class="btn btn-outline" id="btnTrybHaslo" style="width:100%;margin-top:8px;">Zaloguj hasłem</button>';
+      '<button class="btn btn-outline" id="btnTrybLink" style="width:100%;margin-top:8px;">Zaloguj linkiem z maila</button>';
   } else {
-    html += '<p class="small-muted">Wpisz kod z maila wysłanego na <b>'+escapeHtml(f.email)+'</b>.</p>' +
-      '<input type="text" id="chmuraKod" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="kod z maila">' +
-      '<button class="btn btn-secondary" id="btnZaloguj" style="width:100%;margin-top:8px;">Zaloguj</button>' +
-      '<div class="icon-btn-row" style="margin-top:8px;">' +
-        '<button class="btn btn-outline" id="btnNowyKod" style="flex:1;">Wyślij nowy kod</button>' +
-        '<button class="btn btn-outline" id="btnInnyEmail" style="flex:1;">Inny adres</button>' +
-      '</div>';
+    html += '<p class="small-muted">Link przyjdzie mailem. Otwórz go na <b>tym</b> urządzeniu. Na iPhonie i iPadzie link otwiera Safari — w aplikacji z ikony zaloguj się hasłem.</p>' +
+      '<input type="email" id="chmuraEmail" autocomplete="email" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
+      '<button class="btn btn-secondary" id="btnWyslijLink" style="width:100%;margin-top:8px;">Wyślij link</button>' +
+      '<button class="btn btn-outline" id="btnTrybHaslo" style="width:100%;margin-top:8px;">Zaloguj hasłem</button>';
   }
   if(f.info) html += '<p class="small-muted">'+escapeHtml(f.info)+'</p>';
   if(f.blad) html += '<p class="small-muted" style="color:#c0392b;">'+escapeHtml(f.blad)+'</p>';
@@ -1887,22 +1903,17 @@ function renderChmura(){
   box.innerHTML = html;
 
   function klik(id, fn){ var el = document.getElementById(id); if(el) el.addEventListener("click", fn); }
-  function wyslij(){
-    f.blad = ""; f.info = "Wysyłam…"; renderChmura();
-    wyslijKod(f.email).then(function(){
-      f.krok = "kod"; f.info = "Kod wysłany. Sprawdź pocztę (także spam).";
-    }).catch(function(e){
-      f.info = ""; f.blad = komunikatBledu(e, "email");
-    }).then(renderChmura);
-  }
-  klik("btnWyslijKod", function(){
+  klik("btnWyslijLink", function(){
     f.email = document.getElementById("chmuraEmail").value.trim().toLowerCase();
     if(!f.email){ f.blad = "Wpisz adres e-mail."; renderChmura(); return; }
-    wyslij();
+    f.blad = ""; f.info = "Wysyłam…"; renderChmura();
+    wyslijLink(f.email).then(function(){
+      f.info = "Link wysłany. Sprawdź pocztę (także spam) i otwórz go na tym urządzeniu.";
+    }).catch(function(e){
+      f.info = ""; f.blad = komunikatBledu(e, "link");
+    }).then(renderChmura);
   });
-  klik("btnNowyKod", wyslij);
-  klik("btnInnyEmail", function(){ f.krok = "email"; f.blad = ""; f.info = ""; renderChmura(); });
-  klik("btnTrybKod", function(){ f.krok = "email"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnTrybLink", function(){ f.krok = "link"; f.blad = ""; f.info = ""; renderChmura(); });
   klik("btnTrybHaslo", function(){ f.krok = "haslo"; f.blad = ""; f.info = ""; renderChmura(); });
   klik("btnZalogujHaslem", function(){
     f.email = document.getElementById("chmuraEmail").value.trim().toLowerCase();
@@ -1914,17 +1925,6 @@ function renderChmura(){
       return synchronizuj();
     }).catch(function(e){
       f.info = ""; f.blad = komunikatBledu(e, "haslo");
-    }).then(renderChmura);
-  });
-  klik("btnZaloguj", function(){
-    var kod = document.getElementById("chmuraKod").value.replace(/\s/g,"");
-    if(!kod){ f.blad = "Wpisz kod z maila."; renderChmura(); return; }
-    f.blad = ""; f.info = "Loguję…"; renderChmura();
-    zalogujKodem(f.email, kod).then(function(){
-      f.krok = "haslo"; f.info = "";
-      return synchronizuj();
-    }).catch(function(e){
-      f.info = ""; f.blad = komunikatBledu(e, "kod");
     }).then(renderChmura);
   });
   klik("btnSyncTeraz", function(){ f.info = "Synchronizuję…"; renderChmura(); synchronizuj().then(function(){ f.info = ""; renderChmura(); }); });
@@ -1941,7 +1941,9 @@ function escapeHtml(s){
 function chmuraStart(){
   if(!chmuraWlaczona()) return;
   wczytajAuth();
-  synchronizuj();
+  odbierzSesjeZLinku().then(function(){
+    synchronizuj(); // błąd z linku (jeśli był) pokaże się w panelu rodzica
+  });
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") synchronizuj(); });
   window.addEventListener("online", synchronizuj);
 }

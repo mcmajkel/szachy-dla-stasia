@@ -4,7 +4,7 @@ Status: **szkic do akceptacji** · Data: 2026-10-30 · Dotyczy: `index.html`
 
 ## TL;DR
 
-> **Zmiana 2026-10-30:** domyślnie logowanie **e-mailem i hasłem** (`POST /auth/v1/token?grant_type=password`). Wbudowany mailer Supabase nie pozwala zmienić szablonu na kod, a własny SMTP to dodatkowa konfiguracja. Hasło wpisuje się w tej aplikacji, w której ma być sesja — więc działa też z ikony iOS, tak jak kod. Logowanie kodem zostaje jako opcja („Zaloguj kodem z maila”), działa po ustawieniu SMTP i szablonu z `{{ .Token }}`.
+> **Zmiana 2026-10-30:** domyślnie logowanie **e-mailem i hasłem** (`POST /auth/v1/token?grant_type=password`) — wpisuje się je w tej aplikacji, w której ma być sesja, więc działa też z ikony iOS. Alternatywa: **link z maila** (domyślny szablon Supabase, bez własnego SMTP; `POST /auth/v1/otp?redirect_to=…`, sesja wraca w `#access_token=…`). Link otwiera się w przeglądarce, więc na iOS loguje Safari, nie ikonę. Kod z maila odpada: zmiana szablonu na `{{ .Token }}` wymaga własnego SMTP. Wymaga w Supabase: URL Configuration → Redirect URLs: `https://mcmajkel.github.io/szachy-dla-stasia/**`.
 
 - Logowanie **6-cyfrowym kodem z maila** (Supabase Auth, email OTP). Nie link — link na iPhonie otwiera Safari, a ikona na ekranie początkowym ma **osobny** `localStorage`, więc sesja wylądowałaby w złym miejscu.
 - Konta zakłada **tylko rodzic w panelu Supabase**. Rejestracja z aplikacji wyłączona.
