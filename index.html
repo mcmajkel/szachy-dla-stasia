@@ -509,16 +509,19 @@ function defaultState(){
     zastapiono:0, ustawieniaCzas:0
   };
 }
+// Uzupełnia brakujące pola — dla stanu z localStorage, z importu JSON i z chmury.
+function uzupelnijStan(parsed){
+  var d = defaultState();
+  for(var k in d){ if(parsed[k]===undefined) parsed[k]=d[k]; }
+  if(!parsed.zadania) parsed.zadania = {};
+  if(!parsed.seria) parsed.seria = {dni:0, ostatniDzien:null};
+  return parsed;
+}
 function loadState(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return defaultState();
-    var parsed = JSON.parse(raw);
-    var d = defaultState();
-    for(var k in d){ if(parsed[k]===undefined) parsed[k]=d[k]; }
-    if(!parsed.zadania) parsed.zadania = {};
-    if(!parsed.seria) parsed.seria = {dni:0, ostatniDzien:null};
-    return parsed;
+    return uzupelnijStan(JSON.parse(raw));
   } catch(e){
     storageOk = false;
     return defaultState();
@@ -530,7 +533,7 @@ function saveState(){
   } catch(e){
     storageOk = false;
   }
-  if(typeof planujSync === "function") planujSync();
+  planujSync();
 }
 
 var STATE = loadState();
@@ -546,8 +549,8 @@ function migruj(){
   saveState();
 }
 
-function todayStr(){
-  var d = new Date();
+function todayStr(){ return dataStr(new Date()); }
+function dataStr(d){
   var m = String(d.getMonth()+1).padStart(2,"0");
   var day = String(d.getDate()).padStart(2,"0");
   return d.getFullYear()+"-"+m+"-"+day;
@@ -1636,7 +1639,8 @@ function openParentPanel(){
   document.getElementById("btnImportGo").addEventListener("click", function(){
     try{
       var parsed = JSON.parse(document.getElementById("importArea").value);
-      STATE = parsed;
+      if(!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("zly format");
+      STATE = uzupelnijStan(parsed);
       // Import zastępuje postęp — nowszy znacznik sprawia, że chmura i inne urządzenia go przyjmą, a nie scalą.
       STATE.zastapiono = Date.now();
       przeliczOdblokowanie();
@@ -1676,8 +1680,9 @@ function openParentPanel(){
 var SUPABASE_URL = "https://xakddwasuguaowgxbagw.supabase.co";
 var SUPABASE_KEY = "sb_publishable_snSRK_murhgjcGpvQYw4-g_J4RJd8tM";
 var AUTH_KEY = "szachy-auth-v1";
+var KONTO_KEY = "szachy-konto-v1"; // konto, z którym ten stan był ostatnio synchronizowany (zostaje po wylogowaniu)
 
-var AUTH = null;           // {access_token, refresh_token, expires_at, user_id, email, ostatniSync}
+var AUTH = null;           // {access_token, refresh_token, expires_at, user_id, email, ostatniSync, zsynchronizowano}
 var syncTimer = null, syncTrwa = false, syncPonownie = false;
 // krok: "haslo" (domyślnie) | "link" (logowanie linkiem z maila)
 var chmuraFormularz = {email:"", krok:"haslo", blad:"", info:""};
@@ -1693,13 +1698,16 @@ function zapiszAuth(){
   }catch(e){}
 }
 function ustawSesje(d, email){
+  var uid = d.user ? d.user.id : (AUTH && AUTH.user_id);
+  var ta = AUTH && AUTH.user_id === uid; // odświeżenie tej samej sesji, nie nowe logowanie
   AUTH = {
     access_token: d.access_token,
     refresh_token: d.refresh_token,
     expires_at: d.expires_at || (Math.floor(Date.now()/1000) + (d.expires_in||3600)),
-    user_id: d.user ? d.user.id : (AUTH && AUTH.user_id),
+    user_id: uid,
     email: (d.user && d.user.email) || email || (AUTH && AUTH.email),
-    ostatniSync: AUTH ? AUTH.ostatniSync : null
+    ostatniSync: ta ? AUTH.ostatniSync : null,
+    zsynchronizowano: ta ? !!AUTH.zsynchronizowano : false
   };
   zapiszAuth();
 }
@@ -1728,11 +1736,16 @@ function zapytanie(sciezka, opcje){
 }
 
 function odswiezToken(){
-  return zapytanie("/auth/v1/token?grant_type=refresh_token", {metoda:"POST", dane:{refresh_token: AUTH.refresh_token}})
+  var uzyty = AUTH.refresh_token;
+  return zapytanie("/auth/v1/token?grant_type=refresh_token", {metoda:"POST", dane:{refresh_token: uzyty}})
     .then(function(d){ ustawSesje(d); })
     .catch(function(e){
-      // Odrzucony refresh token = konto usunięte albo sesja unieważniona.
-      if(e.status) e.wylogowac = true;
+      // Inna karta mogła już odświeżyć sesję (token jest jednorazowy) — weź jej wynik.
+      var zapisana = null;
+      try{ zapisana = JSON.parse(localStorage.getItem(AUTH_KEY)); }catch(_){}
+      if(zapisana && zapisana.refresh_token && zapisana.refresh_token !== uzyty){ AUTH = zapisana; return; }
+      // Odrzucony refresh token = konto usunięte albo sesja unieważniona. 429/5xx/brak sieci → zostajemy zalogowani.
+      if(e.status === 400 || e.status === 401 || e.status === 403) e.wylogowac = true;
       throw e;
     });
 }
@@ -1814,17 +1827,26 @@ function synchronizuj(){
   var chmura = null;
   return zSesja("/rest/v1/postepy?select=stan&user_id=eq." + AUTH.user_id)
     .then(function(wiersze){
-      chmura = (wiersze && wiersze[0]) ? wiersze[0].stan : null;
-      var przed = JSON.stringify(STATE);
-      var wynik = scal(STATE, chmura);
-      if(JSON.stringify(wynik) !== przed){
+      chmura = (wiersze && wiersze[0]) ? uzupelnijStan(wiersze[0].stan) : null;
+      var przed = jsonStabilny(STATE);
+      var wynik;
+      var ostatnieKonto = null;
+      try{ ostatnieKonto = localStorage.getItem(KONTO_KEY); }catch(e){}
+      if(!AUTH.zsynchronizowano && ostatnieKonto && ostatnieKonto !== AUTH.user_id){
+        // Zmiana konta na tym urządzeniu: lokalny postęp należy do poprzedniego konta — nie mieszamy.
+        wynik = chmura ? JSON.parse(JSON.stringify(chmura)) : defaultState();
+      } else {
+        // Pierwsza synchronizacja tej sesji zawsze sumuje (reset/import z innego miejsca nie kasuje urządzenia).
+        wynik = scal(STATE, chmura, {pierwszy: !AUTH.zsynchronizowano});
+      }
+      if(jsonStabilny(wynik) !== przed){
         STATE = wynik;
         migruj();
         FAZY.forEach(function(f){ checkFazaUnlock(f.id); });
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){ storageOk = false; }
         odswiezWidok();
       }
-      if(chmura && JSON.stringify(chmura) === JSON.stringify(STATE)) return;
+      if(chmura && jsonStabilny(chmura) === jsonStabilny(STATE)) return;
       return zSesja("/rest/v1/postepy", {
         metoda: "POST",
         naglowki: {"Prefer": "resolution=merge-duplicates,return=minimal"},
@@ -1832,7 +1854,10 @@ function synchronizuj(){
       });
     })
     .then(function(){
-      if(AUTH){ AUTH.ostatniSync = Date.now(); zapiszAuth(); }
+      if(AUTH){
+        AUTH.ostatniSync = Date.now(); AUTH.zsynchronizowano = true; zapiszAuth();
+        try{ localStorage.setItem(KONTO_KEY, AUTH.user_id); }catch(e){}
+      }
       renderChmura();
     })
     .catch(function(e){
@@ -1844,6 +1869,14 @@ function synchronizuj(){
       syncTrwa = false;
       if(syncPonownie){ syncPonownie = false; planujSync(); }
     });
+}
+
+// JSON z posortowanymi kluczami — jsonb w Postgresie zmienia kolejność kluczy,
+// więc zwykły JSON.stringify widziałby „zmianę" przy każdej synchronizacji.
+function jsonStabilny(o){
+  if(Array.isArray(o)) return "[" + o.map(jsonStabilny).join(",") + "]";
+  if(o && typeof o === "object") return "{" + Object.keys(o).sort().map(function(k){ return JSON.stringify(k) + ":" + jsonStabilny(o[k]); }).join(",") + "}";
+  return JSON.stringify(o === undefined ? null : o);
 }
 
 // Po scaleniu przerysuj bieżącą zakładkę — ale nie przerywaj dziecku zadania.
@@ -1862,7 +1895,7 @@ function odswiezWidok(){
 function godzinaSync(ms){
   if(!ms) return "jeszcze nie";
   var d = new Date(ms);
-  var dzien = todayStr() === (d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")) ? "dziś" : d.toLocaleDateString("pl-PL");
+  var dzien = todayStr() === dataStr(d) ? "dziś" : d.toLocaleDateString("pl-PL");
   return dzien + " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
 

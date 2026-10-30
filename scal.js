@@ -5,7 +5,10 @@
 
    Wyjątki od „sumy":
    - `zastapiono` — znacznik czasu resetu albo importu. Jeśli źródła mają różny,
-     nowszy wygrywa w całości (inaczej scalanie przywróciłoby skasowany postęp).
+     nowszy postęp wygrywa w całości (inaczej scalanie przywróciłoby skasowany postęp).
+     NIE dotyczy pierwszej synchronizacji urządzenia (opcje.pierwszy): wtedy zawsze suma,
+     a `zastapiono` bierzemy z chmury. Urządzenie, które nigdy nie widziało chmury, nie
+     może jej wyzerować swoim lokalnym resetem ani zostać wyzerowane cudzym.
    - ustawienia rodzica (dźwięk, lichess, handicap) — wygrywa strona z nowszym
      `ustawieniaCzas`; przy remisie druga (chmura). Uruchamiane jako scal(lokalny, chmura).
 
@@ -20,6 +23,8 @@
     if(!y) return x;
     return x > y ? x : y; // format RRRR-MM-DD porównuje się jak tekst
   }
+  // dni między datami RRRR-MM-DD (UTC, więc bez kłopotów ze zmianą czasu)
+  function dzien(s){ var p = s.split("-"); return Date.UTC(+p[0], +p[1]-1, +p[2]) / 86400000; }
 
   function scalRekord(x, y){
     var r = {
@@ -33,38 +38,47 @@
     return r;
   }
 
+  /* Seria to przedział dni [koniec - dni + 1, koniec]. Jeśli przedziały z dwóch urządzeń
+     nachodzą na siebie albo się stykają, seria jest ich sumą (wczoraj tablet, dziś telefon
+     = seria trwa). Jeśli między nimi jest przerwa, liczy się tylko późniejszy. */
   function scalSerie(x, y){
     x = x || {dni:0, ostatniDzien:null};
     y = y || {dni:0, ostatniDzien:null};
-    // Wygrywa seria z późniejszym ostatnim dniem — sama „najdłuższa" mogłaby już wygasnąć.
-    if(x.ostatniDzien !== y.ostatniDzien){
-      var nowsza = pozniejszaData(x.ostatniDzien, y.ostatniDzien) === x.ostatniDzien ? x : y;
-      return {dni: liczba(nowsza.dni), ostatniDzien: nowsza.ostatniDzien};
-    }
-    return {dni: Math.max(liczba(x.dni), liczba(y.dni)), ostatniDzien: x.ostatniDzien};
+    if(!x.ostatniDzien || !liczba(x.dni)) return {dni: liczba(y.dni), ostatniDzien: y.ostatniDzien || null};
+    if(!y.ostatniDzien || !liczba(y.dni)) return {dni: liczba(x.dni), ostatniDzien: x.ostatniDzien};
+    var kx = dzien(x.ostatniDzien), ky = dzien(y.ostatniDzien);
+    var pozn = kx >= ky ? x : y, wczes = kx >= ky ? y : x;
+    var kP = Math.max(kx, ky), kW = Math.min(kx, ky);
+    var startP = kP - liczba(pozn.dni) + 1, startW = kW - liczba(wczes.dni) + 1;
+    var dni = (kW >= startP - 1) ? kP - Math.min(startP, startW) + 1 : liczba(pozn.dni);
+    return {dni: dni, ostatniDzien: pozn.ostatniDzien};
   }
 
-  function scal(lokalny, chmura){
+  function scal(lokalny, chmura, opcje){
     if(!chmura) return kopia(lokalny);
     if(!lokalny) return kopia(chmura);
+    var pierwszy = !!(opcje && opcje.pierwszy);
 
     var zl = liczba(lokalny.zastapiono), zc = liczba(chmura.zastapiono);
-    if(zl !== zc) return kopia(zl > zc ? lokalny : chmura);
+    var wynik;
+    if(zl !== zc && !pierwszy){
+      wynik = kopia(zl > zc ? lokalny : chmura);
+    } else {
+      wynik = kopia(chmura);
+      var a = lokalny.zadania || {}, b = chmura.zadania || {};
+      wynik.zadania = {};
+      Object.keys(a).concat(Object.keys(b)).forEach(function(id){
+        if(wynik.zadania[id]) return;
+        if(a[id] && b[id]) wynik.zadania[id] = scalRekord(a[id], b[id]);
+        else wynik.zadania[id] = kopia(a[id] || b[id]);
+      });
+      wynik.seria = scalSerie(lokalny.seria, chmura.seria);
+      wynik.odblokowanaFaza = Math.max(liczba(lokalny.odblokowanaFaza) || 1, liczba(chmura.odblokowanaFaza) || 1);
+      wynik.wersja = Math.max(liczba(lokalny.wersja), liczba(chmura.wersja));
+      wynik.zastapiono = zc;
+    }
 
-    var wynik = kopia(chmura);
-    var a = lokalny.zadania || {}, b = chmura.zadania || {};
-    wynik.zadania = {};
-    Object.keys(a).concat(Object.keys(b)).forEach(function(id){
-      if(wynik.zadania[id]) return;
-      if(a[id] && b[id]) wynik.zadania[id] = scalRekord(a[id], b[id]);
-      else wynik.zadania[id] = kopia(a[id] || b[id]);
-    });
-
-    wynik.seria = scalSerie(lokalny.seria, chmura.seria);
-    wynik.odblokowanaFaza = Math.max(liczba(lokalny.odblokowanaFaza) || 1, liczba(chmura.odblokowanaFaza) || 1);
-    wynik.wersja = Math.max(liczba(lokalny.wersja), liczba(chmura.wersja));
-    wynik.zastapiono = zl;
-
+    // Ustawienia rodzica — zawsze nowsza zmiana, także gdy postęp został zastąpiony.
     var ustawieniaZ = liczba(lokalny.ustawieniaCzas) > liczba(chmura.ustawieniaCzas) ? lokalny : chmura;
     USTAWIENIA.forEach(function(k){ if(ustawieniaZ[k] !== undefined) wynik[k] = ustawieniaZ[k]; });
     wynik.ustawieniaCzas = Math.max(liczba(lokalny.ustawieniaCzas), liczba(chmura.ustawieniaCzas));

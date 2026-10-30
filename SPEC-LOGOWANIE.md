@@ -1,6 +1,6 @@
 # Spec: logowanie + synchronizacja postępów (Supabase)
 
-Status: **wdrożone w PR #3, przed testem na żywo** · Ostatnia zmiana: 2026-10-30 · Dotyczy: `index.html`, `scal.js`
+Status: **wdrożone (PR #3, po code review), przed testem na żywo** · Ostatnia zmiana: 2026-10-30 · Dotyczy: `index.html`, `scal.js`
 
 ## TL;DR
 
@@ -95,6 +95,7 @@ Dodatkowe ryzyko: wyczyszczenie danych przeglądarki = utrata całego postępu, 
 
 **P0-3. Trwała sesja**
 - Access + refresh token w `localStorage` pod kluczem `szachy-auth-v1`, odświeżane przez `POST /auth/v1/token?grant_type=refresh_token` minutę przed wygaśnięciem i raz po 401.
+- Wylogowanie tylko przy odrzuconym tokenie (400/401/403). 429, 5xx i brak sieci nie wylogowują. Jeśli inna karta już odświeżyła sesję, karta przejmuje jej token zamiast się wylogować.
 - Kryteria:
   - [x] Po przeładowaniu nadal zalogowany (test w przeglądarce).
   - [x] Odrzucony refresh token → wylogowanie, lokalne postępy nietknięte. Błąd sieci → bez wylogowania.
@@ -110,17 +111,21 @@ Dodatkowe ryzyko: wyczyszczenie danych przeglądarki = utrata całego postępu, 
 | `zadania[id].podpowiedz` | OR | uczciwa informacja dla rodzica |
 | `zadania[id].proby` | max | suma nie jest idempotentna — wielokrotne scalanie by ją pompowało |
 | `zadania[id].data` | późniejsza | ostatnie rozwiązanie |
-| `seria` | wygrywa ta z późniejszym `ostatniDzien`; przy remisie większe `dni` | sama „najdłuższa seria" bez daty dawałaby serię, która już wygasła |
+| `seria` | przedziały dni `[koniec − dni + 1, koniec]`: stykające się lub nachodzące → suma; z przerwą → późniejszy | wczoraj tablet, dziś telefon = seria trwa; „najdłuższa" bez daty dawałaby serię, która już wygasła |
 | `odblokowanaFaza` | max, potem przeliczenie odblokowania | nigdy nie zamykamy odblokowanej fazy |
 | `dzwiek`, `lichess`, `handicap` | wygrywa strona z nowszym `ustawieniaCzas`; przy remisie chmura | „zawsze chmura" cofałoby zmianę zrobioną właśnie na tym urządzeniu |
-| `zastapiono` | różne → nowszy stan wygrywa w całości | reset/import ma dojść też do urządzeń offline (P0-6) |
+| `zastapiono` | różne → nowszy postęp wygrywa w całości; **wyjątek: pierwsza synchronizacja sesji zawsze sumuje**, znacznik z chmury | reset/import ma dojść do urządzeń offline, ale nie może skasować postępu urządzenia, które dopiero się loguje |
 | `wersja` | max; po scaleniu `migruj()` | |
 
-- Kryteria (wszystkie w `node tools/test-scal.js`, 13 testów):
+- Zmiana konta na urządzeniu (inne konto niż przy ostatniej synchronizacji, `szachy-konto-v1`): stan z chmury nowego konta zastępuje lokalny, bez mieszania.
+- Porównanie stanów przez JSON z posortowanymi kluczami (`jsonb` zmienia kolejność kluczy).
+- Kryteria (wszystkie w `node tools/test-scal.js`, 18 testów):
   - [x] Postęp przemienny: `scal(a, b)` = `scal(b, a)`; idempotentny: `scal(a, scal(a, b))` = `scal(a, b)`.
   - [x] Pusta chmura + pełne urządzenie → urządzenie bez zmian.
   - [x] Pełna chmura + puste urządzenie → urządzenie = chmura.
   - [x] Telefon (faza 2) + iPad (faza 3) → faza 3 i suma zadań.
+  - [x] Reset przed pierwszym logowaniem nie kasuje chmury; reset w chmurze nie kasuje logującego się urządzenia.
+  - [x] Brak zmian → brak zapisu do chmury (test w przeglądarce z odwróconą kolejnością kluczy).
 
 **P0-5. Kiedy synchronizujemy**
 - Start aplikacji, `visibilitychange` → widoczna, zdarzenie `online`, ~2 s po każdym `saveState()` (debounce).
@@ -131,6 +136,7 @@ Dodatkowe ryzyko: wyczyszczenie danych przeglądarki = utrata całego postępu, 
   - [x] Synchronizacja nie blokuje startu.
 
 **P0-6. Reset i import muszą uwzględniać chmurę**
+- Import uzupełnia brakujące pola (jak przy starcie), żeby niepełny JSON nie rozszedł się na inne urządzenia.
 - Reset i import ustawiają `zastapiono = Date.now()`. Przy różnych `zastapiono` nowszy stan wygrywa w całości, bez scalania — dzięki temu urządzenie, które było offline, też przyjmie reset.
 - Kryteria:
   - [x] Reset → chmura wyzerowana (test w przeglądarce).
@@ -205,6 +211,7 @@ Po pierwszym logowaniu: sprawdzenie w bazie (`select … from postepy`), czy wie
 | 2026-10-30 | Ustawienia rodzica: „nowsza zmiana wygrywa" zamiast „zawsze chmura"; reset/import przez `zastapiono` (wcześniej P1). | „Zawsze chmura" cofało zmianę zrobioną na urządzeniu; reset nie docierał do urządzeń offline. |
 | 2026-10-30 | Kod z maila → **e-mail + hasło** jako domyślne logowanie. | Panel Supabase nie pozwolił zmienić szablonu maila bez własnego SMTP (ustalenie rodzica w panelu); konfiguracja SMTP to dodatkowy krok, a hasło działa z ikony iOS tak samo jak kod. |
 | 2026-10-30 | Alternatywa: **link z maila** (zamiast kodu). | Działa na domyślnym szablonie i wbudowanym mailerze. Ograniczenie: na iOS loguje Safari, nie ikonę; wymaga Redirect URLs. |
+| 2026-10-30 | Poprawki po code review (PR #3): pierwsza synchronizacja zawsze sumuje; zmiana konta nie miesza postępów; seria łączona przez urządzenia; ustawienia „nowsza zmiana" także po resecie/imporcie; stabilne porównanie JSON (koniec zbędnych zapisów i przerysowań); wylogowanie tylko przy odrzuconym tokenie; obsługa dwóch kart; import uzupełnia pola. | Review znalazł ryzyko utraty postępu przy pierwszym logowaniu i resecie przed logowaniem (sprzeczne z G2) oraz zbędny zapis do chmury przy każdej synchronizacji. |
 
 ## Źródła
 

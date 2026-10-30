@@ -62,8 +62,19 @@ test("rekord: lepszy wynik wygrywa, próby = max", () => {
     rozwiazane: true, proby: 4, podpowiedz: true, data: "2026-10-25", pierwszaProbaOK: false, czystaPowtorka: true,
   });
 });
-test("seria: wygrywa późniejszy dzień, nie dłuższa liczba", () => {
-  assert.deepStrictEqual(scal(telefon, ipad).seria, { dni: 1, ostatniDzien: "2026-10-29" });
+test("seria: wczoraj telefon, dziś tablet = seria trwa", () => {
+  // telefon 26–28.10 (3 dni), iPad 29.10 (1 dzień) → 4 dni z rzędu
+  assert.deepStrictEqual(scal(telefon, ipad).seria, { dni: 4, ostatniDzien: "2026-10-29" });
+});
+test("seria: przerwa między urządzeniami → liczy się późniejsza", () => {
+  const a = stan({ seria: { dni: 3, ostatniDzien: "2026-10-26" } });
+  const b = stan({ seria: { dni: 1, ostatniDzien: "2026-10-29" } });
+  assert.deepStrictEqual(scal(a, b).seria, { dni: 1, ostatniDzien: "2026-10-29" });
+});
+test("seria: nachodzące przedziały się sumują, przez granicę miesiąca", () => {
+  const a = stan({ seria: { dni: 5, ostatniDzien: "2026-10-31" } }); // 27–31.10
+  const b = stan({ seria: { dni: 3, ostatniDzien: "2026-11-02" } }); // 31.10–2.11
+  assert.deepStrictEqual(scal(a, b).seria, { dni: 7, ostatniDzien: "2026-11-02" });
 });
 test("seria: ten sam dzień → większa liczba", () => {
   const a = stan({ seria: { dni: 5, ostatniDzien: "2026-10-29" } });
@@ -82,6 +93,25 @@ test("reset (nowszy `zastapiono`) wygrywa w całości", () => {
   const poResecie = stan({ zastapiono: 1000 });
   assert.deepStrictEqual(scal(telefon, poResecie), poResecie);
   assert.deepStrictEqual(scal(poResecie, telefon), poResecie);
+});
+test("pierwsza synchronizacja: reset przed logowaniem nie kasuje chmury", () => {
+  const poResecie = stan({ zastapiono: 1000 });
+  const w = scal(poResecie, telefon, { pierwszy: true });
+  assert.deepStrictEqual(postep(w), postep(telefon));
+});
+test("pierwsza synchronizacja: cudzy reset w chmurze nie kasuje urządzenia", () => {
+  const chmura = stan({ zastapiono: 1000, zadania: { s1: rek({ rozwiazane: true, proby: 1 }) } });
+  const w = scal(telefon, chmura, { pierwszy: true });
+  assert.deepStrictEqual(Object.keys(w.zadania).sort(), ["b1", "b2", "s1"]);
+  assert.strictEqual(w.zastapiono, 1000); // znacznik z chmury — kolejne synchronizacje już scalają
+  assert.deepStrictEqual(scal(w, chmura), w);
+});
+test("ustawienia: nowsza zmiana wygrywa także po zastąpieniu postępu", () => {
+  const import_ = stan({ zastapiono: 1000, lichess: false, ustawieniaCzas: 100 });
+  const zmiana = stan({ lichess: true, ustawieniaCzas: 200 });
+  const w = scal(zmiana, import_);
+  assert.strictEqual(w.zastapiono, 1000);
+  assert.strictEqual(w.lichess, true);
 });
 test("ustawienia: nowsza zmiana wygrywa", () => {
   const lok = stan({ lichess: true, ustawieniaCzas: 200 });
