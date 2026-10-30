@@ -130,4 +130,16 @@ test("nie modyfikuje argumentów", () => {
   assert.strictEqual(JSON.stringify([telefon, ipad]), przed);
 });
 
+test("zestaw figur: wygrywa nowsza zmiana ustawień", () => {
+  const lok = stan({ zestaw: "halloween", ustawieniaCzas: 200 });
+  const chm = stan({ zestaw: "rhosgfx", ustawieniaCzas: 100 });
+  assert.strictEqual(scal(lok, chm).zestaw, "halloween");
+  assert.strictEqual(scal(chm, lok).zestaw, "halloween");
+});
+test("zestaw figur: stary zapis bez pola nie psuje scalania", () => {
+  const w = scal(stan({}), stan({ zestaw: "fantasy", ustawieniaCzas: 5 }));
+  assert.strictEqual(w.zestaw, "fantasy");
+  assert.strictEqual(scal(stan({}), stan({})).zestaw, undefined);
+});
+
 console.log("\n" + ok + " testów przeszło");

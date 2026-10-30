@@ -303,6 +303,20 @@ function sprawdzSpojnoscPlikow() {
     if (!wSw.has(f)) bledy.push(`${f}: brak na liscie PLIKI w sw.js (nie zadziala offline)`);
   }
   for (const f of wHtml) if (!wSw.has(f)) bledy.push(`${f}: jest w index.html, brak w PLIKI w sw.js`);
+  const katFigur = path.join(KORZEN, "figury");
+  if (fs.existsSync(katFigur)) {
+    for (const z of fs.readdirSync(katFigur, { withFileTypes: true }).filter((d) => d.isDirectory())) {
+      for (const f of fs.readdirSync(path.join(katFigur, z.name)).filter((n) => /\.(svg|png)$/.test(n))) {
+        if (!wSw.has(`figury/${z.name}/${f}`)) bledy.push(`figury/${z.name}/${f}: brak na liscie PLIKI w sw.js`);
+      }
+    }
+    for (const m of html.matchAll(/\{id:"([a-z]+)",[^}]*ext:"(svg|png)"/g)) {
+      for (const k of "wb") for (const b of "KQRBNP") {
+        const f = `figury/${m[1]}/${k}${b}.${m[2]}`;
+        if (!fs.existsSync(path.join(KORZEN, f))) bledy.push(`index.html: zestaw ${m[1]} nie ma pliku ${f}`);
+      }
+    }
+  }
   for (const f of wSw) if (!fs.existsSync(path.join(KORZEN, f))) bledy.push(`sw.js: PLIKI zawiera nieistniejacy ${f}`);
   return bledy;
 }

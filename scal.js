@@ -9,12 +9,12 @@
      NIE dotyczy pierwszej synchronizacji urządzenia (opcje.pierwszy): wtedy zawsze suma,
      a `zastapiono` bierzemy z chmury. Urządzenie, które nigdy nie widziało chmury, nie
      może jej wyzerować swoim lokalnym resetem ani zostać wyzerowane cudzym.
-   - ustawienia rodzica (dźwięk, lichess, handicap) — wygrywa strona z nowszym
+   - ustawienia rodzica (dźwięk, lichess, handicap, zestaw figur) — wygrywa strona z nowszym
      `ustawieniaCzas`; przy remisie druga (chmura). Uruchamiane jako scal(lokalny, chmura).
 
    Plik działa w przeglądarce (globalna funkcja `scal`) i w Node (test w tools/). */
 (function(root){
-  var USTAWIENIA = ["dzwiek", "lichess", "handicap"];
+  var USTAWIENIA = ["dzwiek", "lichess", "handicap", "zestaw"];
 
   function kopia(o){ return JSON.parse(JSON.stringify(o)); }
   function liczba(x){ return typeof x === "number" ? x : 0; }
