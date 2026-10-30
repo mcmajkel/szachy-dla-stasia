@@ -95,7 +95,7 @@ Dodatkowe ryzyko: wyczyszczenie danych przeglądarki = utrata całego postępu, 
 | `zadania[id].data` | późniejsza | ostatnie rozwiązanie |
 | `seria` | wygrywa ta z późniejszym `ostatniDzien`; przy remisie większe `dni` | sama „najdłuższa seria" bez daty dawałaby serię, która już wygasła |
 | `odblokowanaFaza` | max, potem `przeliczOdblokowanie()` | nigdy nie zamykamy odblokowanej fazy |
-| `dzwiek`, `lichess`, `handicap` | wartość z chmury, jeśli wiersz istnieje; inaczej lokalna | ustawienia rodzica mają być jednakowe na urządzeniach |
+| `dzwiek`, `lichess`, `handicap` | wygrywa strona z nowszym `ustawieniaCzas`; przy remisie chmura | „zawsze chmura” cofałoby zmianę zrobioną właśnie na tym urządzeniu |
 | `wersja` | max; po scaleniu `migruj()` | |
 
 - Kryteria:
@@ -117,7 +117,7 @@ Dodatkowe ryzyko: wyczyszczenie danych przeglądarki = utrata całego postępu, 
 - Kryteria:
   - [ ] Po resecie na urządzeniu A i synchronizacji na B — B też jest wyzerowane.
 
-> Uwaga: reset na A, gdy B jest offline, wróci po synchronizacji B (B ma stare dane, scalanie je doda). Rozwiązanie w P1-3.
+- Reset i import ustawiają `zastapiono = Date.now()`. Przy różnych `zastapiono` nowszy stan wygrywa w całości, bez scalania — dzięki temu urządzenie B, które było offline, też przyjmie reset.
 
 **P0-7. Model danych**
 ```sql
@@ -133,9 +133,9 @@ create policy "wlasny wiersz" on postepy
 
 ### P1 — szybko po wdrożeniu
 
-- **P1-1. Status w panelu rodzica**: „Zalogowano jako …", „Ostatnia synchronizacja: dziś 14:32", przycisk „Synchronizuj teraz", „Wyloguj".
+- **P1-1. Status w panelu rodzica** *(zrobione)*: „Zalogowano jako …", „Ostatnia synchronizacja: dziś 14:32", przycisk „Synchronizuj teraz", „Wyloguj".
 - **P1-2. Przycisk „Wyślij ponownie"** z odliczaniem 60 s (limit Supabase na ponowne wysłanie kodu).
-- **P1-3. Reset odporny na urządzenia offline**: pole `resetId` w stanie; urządzenie z innym `resetId` niż chmura przyjmuje chmurę zamiast scalać.
+- **P1-3. Reset odporny na urządzenia offline** *(zrobione w P0-6 przez `zastapiono`)*.
 
 ### P2 — projektujemy tak, żeby dało się później
 

@@ -1,6 +1,6 @@
 # ♟️ Szachy dla Stasia
 
-Hub do nauki szachów dla 6-latka. Jeden plik HTML, bez logowania, bez reklam, bez backendu.
+Hub do nauki szachów dla 6-latka. Jeden plik HTML, bez reklam. Działa bez logowania; opcjonalnie synchronizuje postępy między urządzeniami.
 
 ## 🎮 Zagraj online
 
@@ -37,6 +37,7 @@ Analiza i edytor na lichess **pozwalają ruszać obydwoma kolorami i nie pilnuj�
 - **Interakcja tap-tap, nie drag** — drag na telefonie koliduje ze scrollem strony
 - **Telefon, iPad i desktop** — na iPadzie poziomo plansza i treść zadania stoją obok siebie, żeby nic nie trzeba było przewijać
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
+- **Synchronizacja (opcjonalna)** — logowanie kodem z maila (Supabase) w panelu rodzica, postępy scalane między urządzeniami (`scal.js`, test: `node tools/test-scal.js`). Szczegóły i konfiguracja: [SPEC-LOGOWANIE.md](SPEC-LOGOWANIE.md)
 - **Offline-first** — zadania działają bez internetu, sieci wymaga tylko zakładka „Graj"
 
 ## 📚 Zadania
