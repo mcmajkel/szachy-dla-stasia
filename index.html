@@ -28,7 +28,9 @@ body{
 button{font-family:inherit; font-size:16px; cursor:pointer;}
 h1,h2,h3{margin:0 0 8px;}
 p{margin:0 0 10px;}
-#app{display:flex; flex-direction:column; min-height:100vh; max-width:600px; margin:0 auto; position:relative;}
+#app{display:flex; flex-direction:column; min-height:100vh; min-height:100svh; max-width:600px; margin:0 auto; position:relative;}
+/* na ekranie zadania tytuł tylko zabiera miejsce planszy */
+#app.na-zadaniu header.top{display:none;}
 header.top{
   display:flex; align-items:center; justify-content:center; gap:8px;
   padding:14px 16px 8px; user-select:none;
@@ -163,7 +165,7 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
 }
 .explain-sheet{
   background:#fff; width:100%; max-width:600px; border-radius:20px 20px 0 0;
-  padding:20px; max-height:88vh; overflow-y:auto; text-align:center;
+  padding:20px; max-height:88vh; max-height:88svh; overflow-y:auto; text-align:center;
 }
 .explain-sheet .big-ok{font-size:44px; margin-bottom:6px;}
 .explain-sheet p{font-size:17px; text-align:left; background:#f6f0e2; border-radius:12px; padding:12px;}
@@ -229,7 +231,11 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   header.top h1{font-size:24px;}
   header.top .logo{font-size:34px;}
   main{padding:12px 24px 24px; padding-bottom:calc(96px + env(safe-area-inset-bottom));}
-  .board{width:min(100vw - 48px, 560px);}
+  /* 400px to wszystko poza planszą w kolumnie: „Wróć", najdłuższa karta
+     polecenia, status, przycisk podpowiedzi, menu. svh = okno przy widocznym pasku Safari
+     (vh na iOS liczy okno ze schowanym paskiem, więc plansza wychodziła za duża). */
+  .board{width:min(100vw - 48px, 100vh - 400px, 700px);}
+  .board{width:min(100vw - 48px, 100svh - 400px - env(safe-area-inset-bottom), 700px);}
   .task-head .txt b{font-size:19px;}
   .faza-tile .info b, .task-row .ttl b{font-size:18px;}
   nav.bottom button{font-size:14px; min-height:66px;}
@@ -249,11 +255,15 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   #screen-task{
     display:grid;
     grid-template-columns:auto minmax(260px, 1fr);
+    /* ostatni wiersz zbiera nadmiar wysokości planszy — inaczej rozkłada się
+       między „Wróć" a kartę polecenia i robią się dziury */
+    grid-template-rows:repeat(5, auto) 1fr;
     column-gap:28px;
     align-items:start;
   }
-  #screen-task .back-link{grid-column:1 / -1;}
-  #screen-task .board-wrap{grid-column:1; grid-row:2 / span 4; margin:0;}
+  /* plansza od samej góry — „Wróć" ląduje w prawej kolumnie, nie nad planszą */
+  #screen-task .board-wrap{grid-column:1; grid-row:1 / span 6; margin:0;}
+  #screen-task .back-link{grid-column:2; grid-row:1; padding:0 0 8px;}
   #screen-task .task-head,
   #screen-task .counter-wrap,
   #screen-task .status-line,
@@ -261,20 +271,22 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   #screen-task .task-head{margin-top:0;}
 
   /* Plansza ograniczona wysokością okna, nie szerokością.
-     215px to nagłówek + „Wróć" + dolny pasek + marginesy — bez tego
-     plansza chowa się pod nawigacją. */
-  .board{width:min(100vh - 215px, 100vw - 360px, 620px);}
+     12px górny odstęp + 96px miejsce na dolny pasek + safe area + 16px zapasu.
+     Tytuł jest schowany, „Wróć" stoi obok planszy. */
+  .board{width:min(100vh - 124px, 100vw - 360px, 680px);}
+  .board{width:min(100svh - 124px - env(safe-area-inset-bottom), 100vw - 360px, 680px);}
 
   /* arkusz wyjaśnienia jako okno na środku, nie pasek z dołu */
   .explain-overlay{align-items:center;}
-  .explain-sheet{border-radius:20px; max-height:80vh;}
+  .explain-sheet{border-radius:20px; max-height:80vh; max-height:80svh;}
 
-  .embed-wrap{max-width:min(70vh, 560px); margin:0 auto;}
+  .embed-wrap{max-width:min(70vh, 560px); max-width:min(70svh, 560px); margin:0 auto;}
 }
 
 /* --- bardzo niskie okno (podzielony ekran, przeglądarka w małym oknie) --- */
 @media (max-height: 560px){
   .board{width:min(100vh - 190px, 100vw - 32px, 420px);}
+  .board{width:min(100svh - 190px, 100vw - 32px, 420px);}
   header.top{padding:6px 16px 2px;}
   header.top h1{font-size:17px;}
   header.top .logo{font-size:22px;}
@@ -311,9 +323,10 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   #screen-task .task-head .ic{font-size:22px;}
 
   .board{width:min(100vh - 62px, 52vw, 420px);}
+  .board{width:min(100svh - 62px - env(safe-area-inset-bottom), 52vw, 420px);}
 
   .explain-overlay{align-items:center;}
-  .explain-sheet{max-width:560px; max-height:92vh; border-radius:16px; padding:14px;}
+  .explain-sheet{max-width:560px; max-height:92vh; max-height:92svh; border-radius:16px; padding:14px;}
   .explain-sheet .big-ok{font-size:30px; margin-bottom:2px;}
   .explain-sheet h2{font-size:20px;}
 }
@@ -1117,6 +1130,7 @@ function showScreen(name){
     var el = document.getElementById("screen-"+n);
     if(el) el.classList.toggle("active", n===name);
   });
+  document.getElementById("app").classList.toggle("na-zadaniu", name==="task");
   if(TABS.indexOf(name)>=0){
     document.querySelectorAll("nav.bottom button").forEach(function(b){
       b.classList.toggle("active", b.getAttribute("data-tab")===name);
