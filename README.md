@@ -37,7 +37,7 @@ Analiza i edytor na lichess **pozwalają ruszać obydwoma kolorami i nie pilnuj�
 - **Interakcja tap-tap, nie drag** — drag na telefonie koliduje ze scrollem strony
 - **Telefon, iPad i desktop** — na iPadzie poziomo plansza i treść zadania stoją obok siebie, żeby nic nie trzeba było przewijać
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
-- **Offline-first** — zadania działają bez internetu, sieci wymaga tylko zakładka „Graj"
+- **Offline** — `sw.js` (service worker) przy pierwszym otwarciu z internetem zapisuje aplikację i wszystkie zadania; potem działa bez sieci. Internetu wymaga tylko lichess (zakładka „Graj" i przycisk po zadaniu)
 
 ## 📚 Zadania
 
@@ -76,7 +76,16 @@ Potem jedna linijka w `index.html`:
 <script src="zadania/pakiet-07-nowa.js"></script>
 ```
 
+i dopisanie tej samej ścieżki do listy `PLIKI` w `sw.js` — inaczej nowa paczka nie zadziała offline.
+
 ⚠️ **Nie pisz `rozwiazania` ręcznie.** Aplikacja nie zna zasad szachów — porównuje stringi. Pominięta legalna odpowiedź = dziecko dostaje „spróbuj jeszcze raz" za dobry ruch. Tak było z pierwszym zadaniem w tym repo: miało wpisane 4 obrony przed szachem, a legalnych było 6. Dlatego rozwiązania liczy silnik.
+
+## 📴 Offline i aktualizacje
+
+- Pierwsze otwarcie musi być z internetem — wtedy service worker zapisuje pliki. Potem aplikacja startuje bez sieci.
+- **Po każdej zmianie** w `index.html`, `zadania/`, `manifest.json` czy `icon.svg` podbij `WERSJA` w `sw.js` (`szachy-v1` → `szachy-v2`). Bez tego telefony dalej pokazują starą wersję z pamięci podręcznej. Nowa wersja wchodzi przy drugim otwarciu aplikacji po wdrożeniu.
+- iPhone/iPad: dodaj stronę do ekranu początkowego. Safari w zwykłej karcie kasuje dane strony (także postępy) po 7 dniach bez otwierania.
+- Service worker działa tylko na `https://` i `localhost`. Otwarte jako `file://` aplikacja działa, ale bez trybu offline.
 
 ## 📱 Uruchomienie lokalne
 

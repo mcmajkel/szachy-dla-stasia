@@ -1091,7 +1091,9 @@ function showExplanation(task){
       '<div class="actions">' +
         '<button class="btn btn-primary" id="btnNext">Dalej →</button>' +
         (STATE.lichess
-          ? '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>'
+          ? (navigator.onLine
+            ? '<a class="btn btn-secondary" id="btnLichess" href="'+lichessUrl+'" target="_blank" rel="noopener">Zagraj to na lichess ♞</a>'
+            : '<p class="net-note">📡 Lichess potrzebuje internetu</p>')
           : '') +
       '</div>' +
     '</div>';
@@ -1663,6 +1665,11 @@ renderZadania();
 renderGraj();
 renderMoje();
 showScreen("dzis");
+
+/* Offline: sw.js trzyma kopię aplikacji i zadań. Działa tylko na https:// i localhost. */
+if("serviceWorker" in navigator && location.protocol !== "file:"){
+  navigator.serviceWorker.register("sw.js").catch(function(){});
+}
 </script>
 </body>
 </html>
