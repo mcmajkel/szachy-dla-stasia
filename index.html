@@ -383,6 +383,7 @@ window.ZADANIA_PAKIET = function (pakiet) {
 <script src="zadania/pakiet-05-wiszace-bierki.js"></script>
 <script src="zadania/pakiet-06-widelce.js"></script>
 <script src="zadania/pakiet-07-maty-techniczne.js"></script>
+<script src="scal.js"></script>
 
 <script>
 "use strict";
@@ -516,19 +517,24 @@ function defaultState(){
     // Wyjścia na lichess są domyślnie WYŁĄCZONE. Analiza i edytor lichess
     // pozwalają ruszać obydwoma kolorami i nie pilnują zasad — dla 6-latka
     // to zaprzeczenie tego, czego uczy się w zadaniach. Rodzic włącza w panelu.
-    lichess:false
+    lichess:false,
+    // Do synchronizacji (scal.js): czas ostatniego resetu/importu i ostatniej zmiany ustawień rodzica.
+    zastapiono:0, ustawieniaCzas:0
   };
+}
+// Uzupełnia brakujące pola — dla stanu z localStorage, z importu JSON i z chmury.
+function uzupelnijStan(parsed){
+  var d = defaultState();
+  for(var k in d){ if(parsed[k]===undefined) parsed[k]=d[k]; }
+  if(!parsed.zadania) parsed.zadania = {};
+  if(!parsed.seria) parsed.seria = {dni:0, ostatniDzien:null};
+  return parsed;
 }
 function loadState(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return defaultState();
-    var parsed = JSON.parse(raw);
-    var d = defaultState();
-    for(var k in d){ if(parsed[k]===undefined) parsed[k]=d[k]; }
-    if(!parsed.zadania) parsed.zadania = {};
-    if(!parsed.seria) parsed.seria = {dni:0, ostatniDzien:null};
-    return parsed;
+    return uzupelnijStan(JSON.parse(raw));
   } catch(e){
     storageOk = false;
     return defaultState();
@@ -540,6 +546,7 @@ function saveState(){
   } catch(e){
     storageOk = false;
   }
+  planujSync();
 }
 
 var STATE = loadState();
@@ -555,8 +562,8 @@ function migruj(){
   saveState();
 }
 
-function todayStr(){
-  var d = new Date();
+function todayStr(){ return dataStr(new Date()); }
+function dataStr(d){
   var m = String(d.getMonth()+1).padStart(2,"0");
   var day = String(d.getDate()).padStart(2,"0");
   return d.getFullYear()+"-"+m+"-"+day;
@@ -1533,6 +1540,7 @@ function renderMoje(){
 
   document.getElementById("soundToggle").addEventListener("click", function(){
     STATE.dzwiek = !STATE.dzwiek;
+    STATE.ustawieniaCzas = Date.now();
     saveState();
     renderMoje();
   });
@@ -1598,6 +1606,7 @@ function openParentPanel(){
       '<p class="small-muted">Szczebel handicapu (tylko notatka, aplikacja go nie używa):</p>' +
       '<input type="range" min="1" max="6" value="'+STATE.handicap+'" class="slider" id="handicapSlider">' +
       '<p class="small-muted" style="text-align:center;">Poziom: <b id="handicapVal">'+STATE.handicap+'</b></p>' +
+      '<div id="chmuraBox"></div>' +
       '<div class="icon-btn-row">' +
         '<button class="btn btn-outline" id="btnExport" style="flex:1;">📋 Eksport JSON</button>' +
         '<button class="btn btn-outline" id="btnImportShow" style="flex:1;">📥 Import JSON</button>' +
@@ -1608,9 +1617,11 @@ function openParentPanel(){
       '<button class="btn btn-outline" id="btnReset" style="width:100%; margin-top:16px; color:#c0392b; border-color:#c0392b;">🗑️ Reset postępów</button>' +
     '</div>';
   document.body.appendChild(modal);
+  renderChmura();
   document.getElementById("parentClose").addEventListener("click", function(){ modal.remove(); });
   document.getElementById("lichessToggle").addEventListener("click", function(){
     STATE.lichess = !STATE.lichess;
+    STATE.ustawieniaCzas = Date.now();
     saveState();
     odswiezNawigacje();
     modal.remove();
@@ -1619,6 +1630,7 @@ function openParentPanel(){
   });
   document.getElementById("handicapSlider").addEventListener("input", function(e){
     STATE.handicap = parseInt(e.target.value,10);
+    STATE.ustawieniaCzas = Date.now();
     document.getElementById("handicapVal").textContent = STATE.handicap;
     saveState();
   });
@@ -1641,7 +1653,10 @@ function openParentPanel(){
   document.getElementById("btnImportGo").addEventListener("click", function(){
     try{
       var parsed = JSON.parse(document.getElementById("importArea").value);
-      STATE = parsed;
+      if(!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("zly format");
+      STATE = uzupelnijStan(parsed);
+      // Import zastępuje postęp — nowszy znacznik sprawia, że chmura i inne urządzenia go przyjmą, a nie scalą.
+      STATE.zastapiono = Date.now();
       przeliczOdblokowanie();
       alert("Wczytano postępy!");
       modal.remove();
@@ -1659,6 +1674,7 @@ function openParentPanel(){
   document.getElementById("btnReset").addEventListener("click", function(){
     if(confirm("Na pewno zresetować wszystkie postępy?")){
       STATE = defaultState();
+      STATE.zastapiono = Date.now(); // bez tego synchronizacja przywróciłaby postęp z chmury
       saveState();
       modal.remove();
       renderMoje();
@@ -1667,10 +1683,324 @@ function openParentPanel(){
 }
 
 /* =========================================================
+   CHMURA — logowanie (hasło albo link z maila) + synchronizacja (Supabase)
+   Spec: SPEC-LOGOWANIE.md. Bez bibliotek: REST przez fetch.
+   localStorage zostaje źródłem prawdy na urządzeniu; chmura to kopia,
+   z którą stan jest scalany (scal.js) przy starcie, powrocie do aplikacji
+   i ~2 s po każdym zapisie. Bez sieci albo bez logowania działa jak dawniej.
+   ========================================================= */
+// Klucz publiczny (anon/publishable) może być w kodzie — dane chroni RLS w bazie.
+// Puste = synchronizacja wyłączona, sekcja w panelu rodzica się nie pokazuje.
+var SUPABASE_URL = "https://xakddwasuguaowgxbagw.supabase.co";
+var SUPABASE_KEY = "sb_publishable_snSRK_murhgjcGpvQYw4-g_J4RJd8tM";
+var AUTH_KEY = "szachy-auth-v1";
+var KONTO_KEY = "szachy-konto-v1"; // konto, z którym ten stan był ostatnio synchronizowany (zostaje po wylogowaniu)
+
+var AUTH = null;           // {access_token, refresh_token, expires_at, user_id, email, ostatniSync, zsynchronizowano}
+var syncTimer = null, syncTrwa = false, syncPonownie = false;
+// krok: "haslo" (domyślnie) | "link" (logowanie linkiem z maila)
+var chmuraFormularz = {email:"", krok:"haslo", blad:"", info:""};
+
+function chmuraWlaczona(){ return !!(SUPABASE_URL && SUPABASE_KEY); }
+function wczytajAuth(){
+  try{ AUTH = JSON.parse(localStorage.getItem(AUTH_KEY)) || null; }catch(e){ AUTH = null; }
+}
+function zapiszAuth(){
+  try{
+    if(AUTH) localStorage.setItem(AUTH_KEY, JSON.stringify(AUTH));
+    else localStorage.removeItem(AUTH_KEY);
+  }catch(e){}
+}
+function ustawSesje(d, email){
+  var uid = d.user ? d.user.id : (AUTH && AUTH.user_id);
+  var ta = AUTH && AUTH.user_id === uid; // odświeżenie tej samej sesji, nie nowe logowanie
+  AUTH = {
+    access_token: d.access_token,
+    refresh_token: d.refresh_token,
+    expires_at: d.expires_at || (Math.floor(Date.now()/1000) + (d.expires_in||3600)),
+    user_id: uid,
+    email: (d.user && d.user.email) || email || (AUTH && AUTH.email),
+    ostatniSync: ta ? AUTH.ostatniSync : null,
+    zsynchronizowano: ta ? !!AUTH.zsynchronizowano : false
+  };
+  zapiszAuth();
+}
+
+function zapytanie(sciezka, opcje){
+  opcje = opcje || {};
+  var naglowki = {"apikey": SUPABASE_KEY, "Content-Type": "application/json"};
+  if(opcje.token) naglowki["Authorization"] = "Bearer " + opcje.token;
+  if(opcje.naglowki) for(var k in opcje.naglowki) naglowki[k] = opcje.naglowki[k];
+  return fetch(SUPABASE_URL.replace(/\/$/,"") + sciezka, {
+    method: opcje.metoda || "GET",
+    headers: naglowki,
+    body: opcje.dane ? JSON.stringify(opcje.dane) : undefined
+  }).then(function(r){
+    return r.text().then(function(t){
+      var json = null;
+      try{ json = t ? JSON.parse(t) : null; }catch(e){}
+      if(!r.ok){
+        var err = new Error((json && (json.msg || json.message || json.error_description)) || ("HTTP " + r.status));
+        err.status = r.status;
+        throw err;
+      }
+      return json;
+    });
+  });
+}
+
+function odswiezToken(){
+  var uzyty = AUTH.refresh_token;
+  return zapytanie("/auth/v1/token?grant_type=refresh_token", {metoda:"POST", dane:{refresh_token: uzyty}})
+    .then(function(d){ ustawSesje(d); })
+    .catch(function(e){
+      // Inna karta mogła już odświeżyć sesję (token jest jednorazowy) — weź jej wynik.
+      var zapisana = null;
+      try{ zapisana = JSON.parse(localStorage.getItem(AUTH_KEY)); }catch(_){}
+      if(zapisana && zapisana.refresh_token && zapisana.refresh_token !== uzyty){ AUTH = zapisana; return; }
+      // Odrzucony refresh token = konto usunięte albo sesja unieważniona. 429/5xx/brak sieci → zostajemy zalogowani.
+      if(e.status === 400 || e.status === 401 || e.status === 403) e.wylogowac = true;
+      throw e;
+    });
+}
+// Zapytanie z sesją: odświeża token minutę przed wygaśnięciem i raz po 401.
+function zSesja(sciezka, opcje){
+  opcje = opcje || {};
+  var start = (AUTH.expires_at - 60 < Date.now()/1000) ? odswiezToken() : Promise.resolve();
+  return start.then(function(){
+    opcje.token = AUTH.access_token;
+    return zapytanie(sciezka, opcje);
+  }).catch(function(e){
+    if(e.status !== 401 || e.wylogowac) throw e;
+    return odswiezToken().then(function(){
+      opcje.token = AUTH.access_token;
+      return zapytanie(sciezka, opcje).catch(function(e2){
+        if(e2.status === 401) e2.wylogowac = true;
+        throw e2;
+      });
+    });
+  });
+}
+
+function zalogujHaslem(email, haslo){
+  return zapytanie("/auth/v1/token?grant_type=password", {metoda:"POST", dane:{email: email, password: haslo}})
+    .then(function(d){ ustawSesje(d, email); });
+}
+// Link z domyślnego szablonu Supabase (działa bez własnego SMTP, ale tylko na adresy
+// członków organizacji). Link otwiera się w przeglądarce — na iOS to Safari, nie ikona
+// z ekranu początkowego, która ma osobny magazyn. Dlatego domyślne jest hasło.
+function wyslijLink(email){
+  var powrot = location.origin + location.pathname;
+  // create_user:false — link dostaje tylko konto założone wcześniej przez rodzica w panelu Supabase.
+  return zapytanie("/auth/v1/otp?redirect_to=" + encodeURIComponent(powrot), {metoda:"POST", dane:{email: email, create_user: false}});
+}
+// Po kliknięciu linku Supabase wraca na stronę z sesją w adresie: #access_token=…&refresh_token=…
+function odbierzSesjeZLinku(){
+  if(!location.hash || location.hash.length < 2) return Promise.resolve();
+  var p = new URLSearchParams(location.hash.slice(1));
+  if(!p.get("access_token") && !p.get("error")) return Promise.resolve();
+  history.replaceState(null, "", location.pathname + location.search); // tokeny nie zostają w adresie
+  if(p.get("error")){
+    chmuraFormularz.krok = "link";
+    chmuraFormularz.blad = "Link nie zadziałał (" + (p.get("error_description") || p.get("error")).replace(/\+/g," ") + "). Wyślij nowy albo zaloguj się hasłem.";
+    return Promise.resolve();
+  }
+  var token = p.get("access_token");
+  return zapytanie("/auth/v1/user", {token: token}).then(function(u){
+    ustawSesje({
+      access_token: token,
+      refresh_token: p.get("refresh_token"),
+      expires_at: parseInt(p.get("expires_at"),10) || undefined,
+      expires_in: parseInt(p.get("expires_in"),10) || 3600,
+      user: u
+    });
+  }).catch(function(){
+    chmuraFormularz.krok = "link";
+    chmuraFormularz.blad = "Nie udało się dokończyć logowania z linku. Spróbuj ponownie.";
+  });
+}
+function wyloguj(){
+  var token = AUTH && AUTH.access_token;
+  AUTH = null;
+  zapiszAuth();
+  // Postęp na urządzeniu zostaje. Wylogowanie po stronie serwera — najlepiej jak się da.
+  if(token) zapytanie("/auth/v1/logout", {metoda:"POST", token: token}).catch(function(){});
+}
+
+function planujSync(){
+  if(!chmuraWlaczona() || !AUTH) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(synchronizuj, 2000);
+}
+
+function synchronizuj(){
+  if(!chmuraWlaczona() || !AUTH || !AUTH.user_id) return Promise.resolve();
+  if(syncTrwa){ syncPonownie = true; return Promise.resolve(); }
+  syncTrwa = true;
+  clearTimeout(syncTimer);
+  var chmura = null;
+  return zSesja("/rest/v1/postepy?select=stan&user_id=eq." + AUTH.user_id)
+    .then(function(wiersze){
+      chmura = (wiersze && wiersze[0]) ? uzupelnijStan(wiersze[0].stan) : null;
+      var przed = jsonStabilny(STATE);
+      var wynik;
+      var ostatnieKonto = null;
+      try{ ostatnieKonto = localStorage.getItem(KONTO_KEY); }catch(e){}
+      if(!AUTH.zsynchronizowano && ostatnieKonto && ostatnieKonto !== AUTH.user_id){
+        // Zmiana konta na tym urządzeniu: lokalny postęp należy do poprzedniego konta — nie mieszamy.
+        wynik = chmura ? JSON.parse(JSON.stringify(chmura)) : defaultState();
+      } else {
+        // Pierwsza synchronizacja tej sesji zawsze sumuje (reset/import z innego miejsca nie kasuje urządzenia).
+        wynik = scal(STATE, chmura, {pierwszy: !AUTH.zsynchronizowano});
+      }
+      if(jsonStabilny(wynik) !== przed){
+        STATE = wynik;
+        migruj();
+        FAZY.forEach(function(f){ checkFazaUnlock(f.id); });
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){ storageOk = false; }
+        odswiezWidok();
+      }
+      if(chmura && jsonStabilny(chmura) === jsonStabilny(STATE)) return;
+      return zSesja("/rest/v1/postepy", {
+        metoda: "POST",
+        naglowki: {"Prefer": "resolution=merge-duplicates,return=minimal"},
+        dane: {user_id: AUTH.user_id, stan: STATE, zaktualizowano: new Date().toISOString()}
+      });
+    })
+    .then(function(){
+      if(AUTH){
+        AUTH.ostatniSync = Date.now(); AUTH.zsynchronizowano = true; zapiszAuth();
+        try{ localStorage.setItem(KONTO_KEY, AUTH.user_id); }catch(e){}
+      }
+      renderChmura();
+    })
+    .catch(function(e){
+      // Konto usunięte albo sesja unieważniona → wylogowanie. Inne błędy (brak sieci) po cichu.
+      if(e.wylogowac){ AUTH = null; zapiszAuth(); }
+      renderChmura();
+    })
+    .then(function(){
+      syncTrwa = false;
+      if(syncPonownie){ syncPonownie = false; planujSync(); }
+    });
+}
+
+// JSON z posortowanymi kluczami — jsonb w Postgresie zmienia kolejność kluczy,
+// więc zwykły JSON.stringify widziałby „zmianę" przy każdej synchronizacji.
+function jsonStabilny(o){
+  if(Array.isArray(o)) return "[" + o.map(jsonStabilny).join(",") + "]";
+  if(o && typeof o === "object") return "{" + Object.keys(o).sort().map(function(k){ return JSON.stringify(k) + ":" + jsonStabilny(o[k]); }).join(",") + "}";
+  return JSON.stringify(o === undefined ? null : o);
+}
+
+// Po scaleniu przerysuj bieżącą zakładkę — ale nie przerywaj dziecku zadania.
+function odswiezWidok(){
+  var zadanie = document.getElementById("screen-task");
+  if(zadanie && zadanie.classList.contains("active")) return;
+  odswiezNawigacje();
+  var aktywna = document.querySelector("nav.bottom button.active");
+  var tab = aktywna ? aktywna.getAttribute("data-tab") : "dzis";
+  if(tab==="dzis") renderDzis();
+  if(tab==="zadania") renderZadania();
+  if(tab==="graj") renderGraj();
+  if(tab==="moje") renderMoje();
+}
+
+function godzinaSync(ms){
+  if(!ms) return "jeszcze nie";
+  var d = new Date(ms);
+  var dzien = todayStr() === dataStr(d) ? "dziś" : d.toLocaleDateString("pl-PL");
+  return dzien + " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+
+function komunikatBledu(e, krok){
+  if(!e.status) return "Brak połączenia z internetem.";
+  if(e.status === 429) return "Za dużo prób. Poczekaj minutę i spróbuj ponownie.";
+  if(krok === "haslo") return "Nieprawidłowy e-mail lub hasło.";
+  return "Nie udało się wysłać linku. Ten adres nie ma konta albo wbudowana poczta Supabase do niego nie wysyła — zaloguj się hasłem.";
+}
+
+function renderChmura(){
+  var box = document.getElementById("chmuraBox");
+  if(!box) return;
+  if(!chmuraWlaczona()){ box.innerHTML = ""; return; }
+  var f = chmuraFormularz;
+  var html = '<div class="card" style="margin:12px 0;"><h3 style="margin-top:0;">☁️ Synchronizacja</h3>';
+  if(AUTH){
+    html += '<p class="small-muted">Zalogowano jako <b>'+escapeHtml(AUTH.email||"")+'</b><br>Ostatnia synchronizacja: '+godzinaSync(AUTH.ostatniSync)+'</p>' +
+      '<div class="icon-btn-row">' +
+        '<button class="btn btn-outline" id="btnSyncTeraz" style="flex:1;">🔄 Synchronizuj</button>' +
+        '<button class="btn btn-outline" id="btnWyloguj" style="flex:1;">Wyloguj</button>' +
+      '</div>';
+  } else if(f.krok === "haslo"){
+    html += '<p class="small-muted">Postępy zapiszą się w chmurze i pojawią na każdym urządzeniu, na którym się zalogujesz.</p>' +
+      '<input type="email" id="chmuraEmail" autocomplete="username" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
+      '<input type="password" id="chmuraHaslo" autocomplete="current-password" placeholder="hasło" style="margin-top:8px;">' +
+      '<button class="btn btn-secondary" id="btnZalogujHaslem" style="width:100%;margin-top:8px;">Zaloguj</button>' +
+      '<button class="btn btn-outline" id="btnTrybLink" style="width:100%;margin-top:8px;">Zaloguj linkiem z maila</button>';
+  } else {
+    html += '<p class="small-muted">Link przyjdzie mailem. Otwórz go na <b>tym</b> urządzeniu. Na iPhonie i iPadzie link otwiera Safari — w aplikacji z ikony zaloguj się hasłem.</p>' +
+      '<input type="email" id="chmuraEmail" autocomplete="email" placeholder="adres e-mail" value="'+escapeHtml(f.email)+'">' +
+      '<button class="btn btn-secondary" id="btnWyslijLink" style="width:100%;margin-top:8px;">Wyślij link</button>' +
+      '<button class="btn btn-outline" id="btnTrybHaslo" style="width:100%;margin-top:8px;">Zaloguj hasłem</button>';
+  }
+  if(f.info) html += '<p class="small-muted">'+escapeHtml(f.info)+'</p>';
+  if(f.blad) html += '<p class="small-muted" style="color:#c0392b;">'+escapeHtml(f.blad)+'</p>';
+  html += '</div>';
+  box.innerHTML = html;
+
+  function klik(id, fn){ var el = document.getElementById(id); if(el) el.addEventListener("click", fn); }
+  klik("btnWyslijLink", function(){
+    f.email = document.getElementById("chmuraEmail").value.trim().toLowerCase();
+    if(!f.email){ f.blad = "Wpisz adres e-mail."; renderChmura(); return; }
+    f.blad = ""; f.info = "Wysyłam…"; renderChmura();
+    wyslijLink(f.email).then(function(){
+      f.info = "Link wysłany. Sprawdź pocztę (także spam) i otwórz go na tym urządzeniu.";
+    }).catch(function(e){
+      f.info = ""; f.blad = komunikatBledu(e, "link");
+    }).then(renderChmura);
+  });
+  klik("btnTrybLink", function(){ f.krok = "link"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnTrybHaslo", function(){ f.krok = "haslo"; f.blad = ""; f.info = ""; renderChmura(); });
+  klik("btnZalogujHaslem", function(){
+    f.email = document.getElementById("chmuraEmail").value.trim().toLowerCase();
+    var haslo = document.getElementById("chmuraHaslo").value;
+    if(!f.email || !haslo){ f.blad = "Wpisz e-mail i hasło."; renderChmura(); return; }
+    f.blad = ""; f.info = "Loguję…"; renderChmura();
+    zalogujHaslem(f.email, haslo).then(function(){
+      f.info = "";
+      return synchronizuj();
+    }).catch(function(e){
+      f.info = ""; f.blad = komunikatBledu(e, "haslo");
+    }).then(renderChmura);
+  });
+  klik("btnSyncTeraz", function(){ f.info = "Synchronizuję…"; renderChmura(); synchronizuj().then(function(){ f.info = ""; renderChmura(); }); });
+  klik("btnWyloguj", function(){
+    if(!confirm("Wylogować na tym urządzeniu? Postępy na nim zostaną.")) return;
+    wyloguj(); f.krok = "haslo"; f.info = ""; renderChmura();
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; });
+}
+
+function chmuraStart(){
+  if(!chmuraWlaczona()) return;
+  wczytajAuth();
+  odbierzSesjeZLinku().then(function(){
+    synchronizuj(); // błąd z linku (jeśli był) pokaże się w panelu rodzica
+  });
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") synchronizuj(); });
+  window.addEventListener("online", synchronizuj);
+}
+
+/* =========================================================
    START
    ========================================================= */
 migruj();
 przeliczOdblokowanie();
+chmuraStart();
 odswiezNawigacje();
 renderDzis();
 renderZadania();
