@@ -38,7 +38,7 @@ Analiza i edytor na lichess **pozwalają ruszać obydwoma kolorami i nie pilnuj�
 - **Telefon, iPad i desktop** — na iPadzie poziomo plansza i treść zadania stoją obok siebie, żeby nic nie trzeba było przewijać
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
 - **Synchronizacja (opcjonalna)** — logowanie kodem z maila (Supabase) w panelu rodzica, postępy scalane między urządzeniami (`scal.js`, test: `node tools/test-scal.js`). Szczegóły i konfiguracja: [SPEC-LOGOWANIE.md](SPEC-LOGOWANIE.md)
-- **Offline-first** — zadania działają bez internetu, sieci wymaga tylko zakładka „Graj"
+- **Offline** — `sw.js` (service worker) przy pierwszym otwarciu z internetem zapisuje aplikację i wszystkie zadania; potem działa bez sieci. Internetu wymagają tylko lichess i synchronizacja postępów
 
 ## 📚 Zadania
 
@@ -77,7 +77,18 @@ Potem jedna linijka w `index.html`:
 <script src="zadania/pakiet-07-nowa.js"></script>
 ```
 
+i dopisanie tej samej ścieżki do listy `PLIKI` w `sw.js` — inaczej nowa paczka nie zadziała offline.
+
 ⚠️ **Nie pisz `rozwiazania` ręcznie.** Aplikacja nie zna zasad szachów — porównuje stringi. Pominięta legalna odpowiedź = dziecko dostaje „spróbuj jeszcze raz" za dobry ruch. Tak było z pierwszym zadaniem w tym repo: miało wpisane 4 obrony przed szachem, a legalnych było 6. Dlatego rozwiązania liczy silnik.
+
+## 📴 Offline i aktualizacje
+
+- Pierwsze otwarcie musi być z internetem — wtedy service worker zapisuje pliki. Potem aplikacja startuje bez sieci.
+- **Aktualizacje docierają same.** Aplikacja startuje z pamięci, a w tle pobiera świeże pliki — nowa wersja pojawia się przy drugim otwarciu po wdrożeniu. `WERSJA` w `sw.js` podbij tylko, gdy zmieniasz listę `PLIKI` (stara pamięć zostanie wyczyszczona).
+- Każdy lokalny `<script src>` z `index.html` musi być na liście `PLIKI` w `sw.js`. Pilnuje tego `node tools/waliduj.js`.
+- Logowanie i synchronizacja (Supabase) wymagają internetu; offline postępy zapisują się lokalnie.
+- iPhone/iPad: dodaj stronę do ekranu początkowego. Safari w zwykłej karcie kasuje dane strony (także postępy) po 7 dniach bez otwierania.
+- Service worker działa tylko na `https://` i `localhost`. Otwarte jako `file://` aplikacja działa, ale bez trybu offline.
 
 ## 📱 Uruchomienie lokalne
 
