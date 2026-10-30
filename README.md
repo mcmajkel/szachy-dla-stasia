@@ -1,6 +1,6 @@
 # ♟️ Szachy dla Stasia
 
-Hub do nauki szachów dla 6-latka. Jeden plik HTML, bez logowania, bez reklam, bez backendu.
+Hub do nauki szachów dla 6-latka. Jeden plik HTML, bez reklam. Działa bez logowania; opcjonalnie synchronizuje postępy między urządzeniami.
 
 ## 🎮 Zagraj online
 
@@ -37,7 +37,8 @@ Analiza i edytor na lichess **pozwalają ruszać obydwoma kolorami i nie pilnuj�
 - **Interakcja tap-tap, nie drag** — drag na telefonie koliduje ze scrollem strony
 - **Telefon, iPad i desktop** — na iPadzie poziomo plansza i treść zadania stoją obok siebie, żeby nic nie trzeba było przewijać
 - **Postępy w `localStorage`** (klucz `szachy-hub-v1`), zapis po każdym zadaniu
-- **Offline** — `sw.js` (service worker) przy pierwszym otwarciu z internetem zapisuje aplikację i wszystkie zadania; potem działa bez sieci. Internetu wymaga tylko lichess (zakładka „Graj" i przycisk po zadaniu)
+- **Synchronizacja (opcjonalna)** — logowanie kodem z maila (Supabase) w panelu rodzica, postępy scalane między urządzeniami (`scal.js`, test: `node tools/test-scal.js`). Szczegóły i konfiguracja: [SPEC-LOGOWANIE.md](SPEC-LOGOWANIE.md)
+- **Offline** — `sw.js` (service worker) przy pierwszym otwarciu z internetem zapisuje aplikację i wszystkie zadania; potem działa bez sieci. Internetu wymagają tylko lichess i synchronizacja postępów
 
 ## 📚 Zadania
 
@@ -83,7 +84,9 @@ i dopisanie tej samej ścieżki do listy `PLIKI` w `sw.js` — inaczej nowa pacz
 ## 📴 Offline i aktualizacje
 
 - Pierwsze otwarcie musi być z internetem — wtedy service worker zapisuje pliki. Potem aplikacja startuje bez sieci.
-- **Po każdej zmianie** w `index.html`, `zadania/`, `manifest.json` czy `icon.svg` podbij `WERSJA` w `sw.js` (`szachy-v1` → `szachy-v2`). Bez tego telefony dalej pokazują starą wersję z pamięci podręcznej. Nowa wersja wchodzi przy drugim otwarciu aplikacji po wdrożeniu.
+- **Aktualizacje docierają same.** Aplikacja startuje z pamięci, a w tle pobiera świeże pliki — nowa wersja pojawia się przy drugim otwarciu po wdrożeniu. `WERSJA` w `sw.js` podbij tylko, gdy zmieniasz listę `PLIKI` (stara pamięć zostanie wyczyszczona).
+- Każdy lokalny `<script src>` z `index.html` musi być na liście `PLIKI` w `sw.js`. Pilnuje tego `node tools/waliduj.js`.
+- Logowanie i synchronizacja (Supabase) wymagają internetu; offline postępy zapisują się lokalnie.
 - iPhone/iPad: dodaj stronę do ekranu początkowego. Safari w zwykłej karcie kasuje dane strony (także postępy) po 7 dniach bez otwierania.
 - Service worker działa tylko na `https://` i `localhost`. Otwarte jako `file://` aplikacja działa, ale bez trybu offline.
 

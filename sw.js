@@ -16,7 +16,8 @@ var PLIKI = [
   "zadania/pakiet-04-mat-w-1.js",
   "zadania/pakiet-05-wiszace-bierki.js",
   "zadania/pakiet-06-widelce.js",
-  "zadania/pakiet-07-maty-techniczne.js"
+  "zadania/pakiet-07-maty-techniczne.js",
+  "scal.js"
 ];
 
 /* cache:"reload" omija pamięć HTTP przeglądarki (GitHub Pages: max-age=600),
