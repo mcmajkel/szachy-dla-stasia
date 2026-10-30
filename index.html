@@ -562,13 +562,31 @@ function yesterdayOf(dateStr){
 
 function tasksByFaza(faza){ return ZADANIA.filter(function(z){ return z.faza===faza; }); }
 
+/* Zadanie „zaliczone" do odblokowania fazy: czysto za pierwszym razem
+   albo czysto przy późniejszej powtórce. Bez drugiej możliwości dziecko,
+   które raz się pomyliło, nigdy by nie przeszło progu 80%. */
+function zaliczone(id){
+  var r = STATE.zadania[id];
+  return !!(r && (r.pierwszaProbaOK || r.czystaPowtorka));
+}
+function fazaDoOdblokowania(faza){
+  var tasks = tasksByFaza(faza);
+  var good = tasks.filter(function(t){ return zaliczone(t.id); }).length;
+  return Math.max(0, Math.ceil(tasks.length*0.8) - good);
+}
 function checkFazaUnlock(faza){
   var tasks = tasksByFaza(faza);
   if(tasks.length===0) return;
-  var good = tasks.filter(function(t){ return STATE.zadania[t.id] && STATE.zadania[t.id].pierwszaProbaOK; }).length;
-  if(good / tasks.length >= 0.8){
+  var wszystkieRozwiazane = tasks.every(function(t){ return STATE.zadania[t.id] && STATE.zadania[t.id].rozwiazane; });
+  if(fazaDoOdblokowania(faza)===0 || wszystkieRozwiazane){
     STATE.odblokowanaFaza = Math.max(STATE.odblokowanaFaza, Math.min(OSTATNIA_FAZA, faza+1));
   }
+}
+/* Przelicza odblokowanie od nowa — przy starcie i po imporcie, żeby
+   postęp zapisany pod starą regułą nie zostawał zablokowany. */
+function przeliczOdblokowanie(){
+  FAZY.forEach(function(f){ checkFazaUnlock(f.id); });
+  saveState();
 }
 
 function getOrCreateRec(taskId){
@@ -591,9 +609,11 @@ function finalizeSolve(taskId, cleanSolve){
   rec.data = todayStr();
   if(firstTime){
     rec.pierwszaProbaOK = cleanSolve;
-    var task = ZADANIA.find(function(z){ return z.id===taskId; });
-    if(task) checkFazaUnlock(task.faza);
+  } else if(cleanSolve){
+    rec.czystaPowtorka = true;
   }
+  var task = ZADANIA.find(function(z){ return z.id===taskId; });
+  if(task) checkFazaUnlock(task.faza);
   saveState();
 }
 
@@ -1180,7 +1200,8 @@ function pickDailyQueue(){
 
   // gdy w fazie nie ma już nic nowego — dobierz powtórki z tej fazy
   if(picks.length<5){
-    picks = picks.concat(shuffle(wFazie.filter(function(z){ return rozwiazane(z.id); })).slice(0,5-picks.length));
+    picks = picks.concat(shuffle(wFazie.filter(function(z){ return rozwiazane(z.id); }))
+      .sort(function(a,b){ return zaliczone(a.id) - zaliczone(b.id); }).slice(0,5-picks.length));
   }
   var ids = picks.map(function(z){ return z.id; });
 
@@ -1263,9 +1284,14 @@ function pickKolejnaPorcje(ile){
 
 /* Powtórki: od najdawniej robionych (prosty spaced repetition). */
 function pickPowtorke(ile){
+  var faza = STATE.odblokowanaFaza;
   return ZADANIA
     .filter(function(z){ return z.faza>0 && rozwiazane(z.id); })
     .sort(function(a,b){
+      // najpierw zadania z fazy, która czeka na odblokowanie, a jeszcze nie zaliczone czysto
+      var pa = (a.faza===faza && !zaliczone(a.id)) ? 0 : 1;
+      var pb = (b.faza===faza && !zaliczone(b.id)) ? 0 : 1;
+      if(pa!==pb) return pa-pb;
       return (STATE.zadania[a.id].data||"").localeCompare(STATE.zadania[b.id].data||"");
     })
     .slice(0, ile)
@@ -1338,6 +1364,9 @@ function renderZadania(){
     html += '<button class="faza-tile'+(locked?' locked':'')+'" data-faza="'+f.id+'" '+(locked||tasks.length===0?'disabled':'')+' style="border:none;">';
     html += '<span class="num">'+f.id+'</span>';
     html += '<div class="info"><b>'+f.ikona+' '+f.nazwa+'</b><span>'+(tasks.length===0?'wkrótce nowe zadania':(solved+' / '+tasks.length+' rozwiązane'))+' · '+f.lekcja+'</span>';
+    if(f.id===STATE.odblokowanaFaza && f.id<OSTATNIA_FAZA && tasks.length>0 && fazaDoOdblokowania(f.id)>0){
+      html += '<span style="display:block;">Do następnej fazy: jeszcze '+fazaDoOdblokowania(f.id)+' zadań bez błędu</span>';
+    }
     if(tasks.length>0) html += '<div class="progress-bar"><div style="width:'+pct+'%;"></div></div>';
     html += '</div>';
     html += '<span class="lock">'+(locked?'🔒':'')+'</span>';
@@ -1561,6 +1590,7 @@ function openParentPanel(){
       '</div>' +
       '<textarea id="importArea" rows="4" style="display:none;" placeholder="Wklej tu JSON..."></textarea>' +
       '<button class="btn btn-secondary" id="btnImportGo" style="display:none;width:100%;margin-top:8px;">Wczytaj</button>' +
+      '<button class="btn btn-outline" id="btnOdblokuj" style="width:100%; margin-top:16px;"'+(STATE.odblokowanaFaza>=OSTATNIA_FAZA?' disabled':'')+'>🔓 Odblokuj następną fazę</button>' +
       '<button class="btn btn-outline" id="btnReset" style="width:100%; margin-top:16px; color:#c0392b; border-color:#c0392b;">🗑️ Reset postępów</button>' +
     '</div>';
   document.body.appendChild(modal);
@@ -1598,11 +1628,19 @@ function openParentPanel(){
     try{
       var parsed = JSON.parse(document.getElementById("importArea").value);
       STATE = parsed;
-      saveState();
+      przeliczOdblokowanie();
       alert("Wczytano postępy!");
       modal.remove();
       renderMoje();
     }catch(e){ alert("Niepoprawny JSON."); }
+  });
+  document.getElementById("btnOdblokuj").addEventListener("click", function(){
+    STATE.odblokowanaFaza = Math.min(OSTATNIA_FAZA, STATE.odblokowanaFaza+1);
+    saveState();
+    modal.remove();
+    renderZadania();
+    renderDzis();
+    openParentPanel();
   });
   document.getElementById("btnReset").addEventListener("click", function(){
     if(confirm("Na pewno zresetować wszystkie postępy?")){
@@ -1618,6 +1656,7 @@ function openParentPanel(){
    START
    ========================================================= */
 migruj();
+przeliczOdblokowanie();
 odswiezNawigacje();
 renderDzis();
 renderZadania();
