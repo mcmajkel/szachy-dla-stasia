@@ -127,8 +127,12 @@ create table postepy (
   zaktualizowano timestamptz not null default now()
 );
 alter table postepy enable row level security;
-create policy "wlasny wiersz" on postepy
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- wdrożone jako migracja „postepy” w projekcie Chess-Stanis:
+create policy "wlasny wiersz select" on postepy for select to authenticated using ((select auth.uid()) = user_id);
+create policy "wlasny wiersz insert" on postepy for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "wlasny wiersz update" on postepy for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+revoke all on postepy from anon;
+grant select, insert, update on postepy to authenticated;
 ```
 
 ### P1 — szybko po wdrożeniu
@@ -183,7 +187,7 @@ Aplikacja rodzinna, kilka kont — mierzymy ręcznie, nie analityką.
 
 ## Źródła
 
-> **Do potwierdzenia przy konfiguracji.** Linków poniżej nie dało się otworzyć przy pisaniu spec (sieć sesji blokuje supabase.com i webkit.org). Szczegóły z nich pochodzą z wiedzy o dokumentacji, nie z odczytu na dziś. Przed fazą 1 sprawdzić: limit 60 s na ponowne wysłanie kodu, ograniczenia wbudowanego mailera (tylko członkowie zespołu, limit na godzinę), wstrzymywanie darmowego projektu po tygodniu, wyłączenie 7-dniowego limitu magazynu dla ikony iOS.
+> **Potwierdzone w dokumentacji Supabase (2026-10-30, przez connector):** kod zamiast linku przez `{{ .Token }}` w szablonie „Magic Link”, `shouldCreateUser: false`, `verifyOtp` z `type: "email"`, wbudowany mailer wysyła tylko do członków zespołu organizacji (inne adresy: `email_address_not_authorized`). **Niepotwierdzone:** dokładny limit ponownego wysłania kodu (dokumentacja podaje go jako zmienną), wstrzymywanie darmowego projektu po tygodniu, zachowanie magazynu ikony iOS (webkit.org niedostępne z tej sesji).
 
 - Supabase, logowanie kodem (OTP), `shouldCreateUser`/`create_user`, szablon z `{{ .Token }}`: https://supabase.com/docs/guides/auth/auth-email-passwordless
 - Supabase, limity wbudowanego maila i własny SMTP: https://supabase.com/docs/guides/auth/auth-smtp
