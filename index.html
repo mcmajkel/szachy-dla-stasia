@@ -128,6 +128,13 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
 .sq.ok{background:#8fce7a !important;}
 .sq.bad{background:#e28b7f !important;}
 .sq.hint-target{outline:3px dashed #f6d743; outline-offset:-3px;}
+/* ostatni ruch przeciwnika (np. skok piona o dwa pola przed biciem w przelocie) */
+.sq.last{box-shadow:inset 0 0 0 100px rgba(246,215,67,.45);}
+/* pytania wyboru: „Mat, pat czy szach?", „Czy wolno zrobić roszadę?" */
+.wybor-wrap{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:4px 0 6px;}
+.wybor-wrap .btn{flex:1 1 0; min-width:96px; font-size:19px; background:#fff; color:var(--ink); border:2px solid var(--accent);}
+.wybor-wrap .btn.ok{background:#8fce7a; border-color:#8fce7a;}
+.wybor-wrap .btn.bad{background:#e28b7f; border-color:#e28b7f;}
 .sq .coord{position:absolute; font-size:10px; font-weight:700; opacity:.55; pointer-events:none; user-select:none;}
 .sq .coord.file{bottom:2px; right:3px;}
 .sq .coord.rank{top:2px; left:3px;}
@@ -276,6 +283,7 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   #screen-task .task-head,
   #screen-task .counter-wrap,
   #screen-task .status-line,
+  #screen-task .wybor-wrap,
   #screen-task .hint-area{grid-column:2;}
   #screen-task .task-head{margin-top:0;}
 
@@ -327,6 +335,7 @@ nav.bottom.bez-graj button[data-tab="graj"]{display:none;}
   #screen-task .task-head,
   #screen-task .counter-wrap,
   #screen-task .status-line,
+  #screen-task .wybor-wrap,
   #screen-task .hint-area{grid-column:2;}
   #screen-task .task-head{padding:10px; margin-bottom:6px;}
   #screen-task .task-head .ic{font-size:22px;}
@@ -392,6 +401,7 @@ window.ZADANIA_PAKIET = function (pakiet) {
 <script src="zadania/pakiet-05-wiszace-bierki.js"></script>
 <script src="zadania/pakiet-06-widelce.js"></script>
 <script src="zadania/pakiet-07-maty-techniczne.js"></script>
+<script src="zadania/pakiet-08-pelne-zasady.js"></script>
 <script src="scal.js"></script>
 
 <script>
@@ -510,12 +520,31 @@ function boardToFen(board, turn){
   }
   return rows.join("/") + " " + turn + " - - 0 1";
 }
+/* Roszada i bicie w przelocie ruszają DWIE bierki. Aplikacja nie zna zasad,
+   więc rozpoznaje je po kształcie ruchu: król o dwa pola w bok = roszada,
+   pion na ukos na puste pole = bicie w przelocie. Czy ruch był dozwolony,
+   rozstrzyga i tak lista `rozwiazania` z silnika. */
+function ruchSpecjalny(board, from, to){
+  var p = board[from];
+  if(!p) return null;
+  var t = p.toLowerCase();
+  var df = FILES.indexOf(to[0]) - FILES.indexOf(from[0]);
+  if(t==="k" && Math.abs(df)===2 && from[1]===to[1]){
+    var r = from[1];
+    return df>0 ? {wiezaZ:"h"+r, wiezaNa:"f"+r} : {wiezaZ:"a"+r, wiezaNa:"d"+r};
+  }
+  if(t==="p" && df!==0 && !board[to]) return {zbityPrzelot: to[0]+from[1]};
+  return null;
+}
 function applyMoveToBoard(board, uci){
   var nb = {};
   for(var k in board) nb[k] = board[k];
   var from = uci.slice(0,2), to = uci.slice(2,4);
   var piece = nb[from];
   if(!piece) return nb;
+  var sp = ruchSpecjalny(nb, from, to);
+  if(sp && sp.wiezaZ){ nb[sp.wiezaNa] = nb[sp.wiezaZ]; nb[sp.wiezaZ] = null; }
+  if(sp && sp.zbityPrzelot){ nb[sp.zbityPrzelot] = null; }
   var isWhite = piece === piece.toUpperCase();
   var toRank = parseInt(to[1],10);
   if(piece.toLowerCase()==="p" && (toRank===8 || toRank===1)){
@@ -733,6 +762,10 @@ function Board(container, opts){
   this.pieceEls = {};
   this.buildGrid();
   this.buildPieces();
+  if(opts.ostatniRuch){
+    this.highlight(opts.ostatniRuch.slice(0,2), "last");
+    this.highlight(opts.ostatniRuch.slice(2,4), "last");
+  }
 }
 Board.prototype.buildGrid = function(){
   var self = this;
@@ -804,11 +837,17 @@ Board.prototype.animateMove = function(from, to, cb){
   if(!pieceEl){ if(cb) cb(); return; }
   var capturedEl = this.pieceEls[to];
   var pos = squarePercentPos(to, this.orientation);
+  var sp = this.specjalny = ruchSpecjalny(this.board, from, to);
   pieceEl.style.zIndex = 5;
   requestAnimationFrame(function(){
     pieceEl.style.left = pos.left; pieceEl.style.top = pos.top;
+    if(sp && sp.wiezaZ && self.pieceEls[sp.wiezaZ]){
+      var pw = squarePercentPos(sp.wiezaNa, self.orientation);
+      self.pieceEls[sp.wiezaZ].style.left = pw.left; self.pieceEls[sp.wiezaZ].style.top = pw.top;
+    }
   });
   if(capturedEl){ capturedEl.style.opacity = "0"; }
+  if(sp && sp.zbityPrzelot && this.pieceEls[sp.zbityPrzelot]){ this.pieceEls[sp.zbityPrzelot].style.opacity = "0"; }
   setTimeout(function(){ if(cb) cb(); }, 160);
 };
 // cofa wizualnie figurę na from (po złym ruchu)
@@ -817,6 +856,12 @@ Board.prototype.revertMove = function(from, to){
   var pieceEl = this.pieceEls[from];
   var capturedEl = this.pieceEls[to];
   if(capturedEl) capturedEl.style.opacity = "1";
+  var sp = this.specjalny; this.specjalny = null;
+  if(sp && sp.zbityPrzelot && this.pieceEls[sp.zbityPrzelot]) this.pieceEls[sp.zbityPrzelot].style.opacity = "1";
+  if(sp && sp.wiezaZ && this.pieceEls[sp.wiezaZ]){
+    var pw = squarePercentPos(sp.wiezaZ, this.orientation), wEl = this.pieceEls[sp.wiezaZ];
+    requestAnimationFrame(function(){ wEl.style.left = pw.left; wEl.style.top = pw.top; });
+  }
   if(pieceEl){
     var pos = squarePercentPos(from, this.orientation);
     requestAnimationFrame(function(){
@@ -826,6 +871,18 @@ Board.prototype.revertMove = function(from, to){
 };
 // trwale usuwa zbitą figurę i przenosi w warstwie DOM (po dobrym ruchu)
 Board.prototype.commitMove = function(from, to){
+  var sp = this.specjalny || ruchSpecjalny(this.board, from, to);
+  this.specjalny = null;
+  if(sp && sp.wiezaZ && this.pieceEls[sp.wiezaZ]){
+    this.pieceEls[sp.wiezaNa] = this.pieceEls[sp.wiezaZ]; delete this.pieceEls[sp.wiezaZ];
+    this.board[sp.wiezaNa] = this.board[sp.wiezaZ]; this.board[sp.wiezaZ] = null;
+  }
+  if(sp && sp.zbityPrzelot){
+    var epEl = this.pieceEls[sp.zbityPrzelot];
+    if(epEl && epEl.parentNode) epEl.parentNode.removeChild(epEl);
+    delete this.pieceEls[sp.zbityPrzelot];
+    this.board[sp.zbityPrzelot] = null;
+  }
   var capturedEl = this.pieceEls[to];
   if(capturedEl && capturedEl.parentNode){ capturedEl.parentNode.removeChild(capturedEl); }
   var movingEl = this.pieceEls[from];
@@ -893,6 +950,9 @@ function speak(text){
    IKONA WG TREŚCI POLECENIA
    ========================================================= */
 function taskIcon(task){
+  if(task.motyw==="roszada" || task.motyw==="czy-roszada") return "🏰";
+  if(task.motyw==="w-przelocie") return "💨";
+  if(task.motyw==="mat-pat-szach" || task.pulapki) return "🤝";
   var t = task.polecenie.toLowerCase();
   if(t.indexOf("zamatuj")>=0) return "🏆";
   if(t.indexOf("zbij")>=0) return "🎯";
@@ -932,8 +992,11 @@ function openTask(taskId, session){
   // czarnymi (tak każe metodyka), więc bez tej informacji wygląda to jak
   // ruszanie raz jednym, raz drugim kolorem.
   var graCzarnymi = (fenToBoard(task.fen).turn === "b");
-  var odznaka = '<span class="kolor-gracza '+(graCzarnymi?"czarne":"biale")+'">'+
-                (graCzarnymi ? "Grasz czarnymi" : "Grasz białymi")+'</span>';
+  // W pytaniach wyboru dziecko nie rusza bierek, więc mówimy tylko, kto ma ruch.
+  var napis = task.typ==="wybor"
+    ? (graCzarnymi ? "Ruch czarnych" : "Ruch białych")
+    : (graCzarnymi ? "Grasz czarnymi" : "Grasz białymi");
+  var odznaka = '<span class="kolor-gracza '+(graCzarnymi?"czarne":"biale")+'">'+napis+'</span>';
 
   head.innerHTML =
     '<span class="ic">'+taskIcon(task)+'</span>' +
@@ -951,6 +1014,27 @@ function openTask(taskId, session){
   var boardWrap = document.createElement("div");
   boardWrap.className = "board-wrap";
   scr.appendChild(boardWrap);
+
+  var wyborWrap = null;
+  if(task.typ==="wybor"){
+    wyborWrap = document.createElement("div");
+    wyborWrap.className = "wybor-wrap";
+    (task.odpowiedzi||[]).forEach(function(o){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn";
+      b.textContent = o.tekst;
+      b.addEventListener("click", function(){
+        if(locked || b.disabled) return;
+        var correct = task.rozwiazania.indexOf(o.id)>=0;
+        b.classList.add(correct ? "ok" : "bad");
+        if(!correct) b.disabled = true;   // zła odpowiedź odpada — bez klikania w kółko
+        finishGuess(correct, o.id, null, null);
+      });
+      wyborWrap.appendChild(b);
+    });
+    scr.appendChild(wyborWrap);
+  }
 
   var statusLine = document.createElement("div");
   statusLine.className = "status-line";
@@ -978,6 +1062,7 @@ function openTask(taskId, session){
   var board = new Board(boardWrap, {
     fen: task.fen,
     orientation: task.orientacja,
+    ostatniRuch: task.ostatniRuch,
     onSquareTap: onTap
   });
 
@@ -1012,6 +1097,7 @@ function openTask(taskId, session){
 
   function onTap(sq){
     if(locked) return;
+    if(task.typ==="wybor") return;   // odpowiedź przyciskiem, plansza tylko do patrzenia
 
     if(task.typ==="wskaz-pole"){
       handleGuess(sq, sq); // porównujemy samo pole
@@ -1029,6 +1115,19 @@ function openTask(taskId, session){
     if(selected===sq){
       board.unhighlight(sq,"sel");
       selected = null;
+      return;
+    }
+    // Roszada „dotknij króla, potem wieżę" — tak robi większość dzieci (i lichess).
+    // Tylko w pozycjach z prawem do roszady; gdzie indziej to zwykła zmiana wyboru.
+    var prawaRoszady = (task.fen.split(/\s+/)[2] || "-");
+    var wybrana = board.board[selected];
+    if(prawaRoszady!=="-" && wybrana && wybrana.toLowerCase()==="k" && piece && piece===(board.turn==="w"?"R":"r")
+       && sq[1]===selected[1] && (sq[0]==="a" || sq[0]==="h")){
+      var cel = (sq[0]==="h" ? "g" : "c") + selected[1];
+      var kingFrom = selected;
+      board.unhighlight(selected,"sel");
+      selected = null;
+      handleGuess(kingFrom + cel, kingFrom, cel);
       return;
     }
     // jeśli tapnięto inną własną figurę — zmień wybór
@@ -1111,13 +1210,19 @@ function openTask(taskId, session){
     } else {
       playWrong();
       wrongCount++;
-      flashStatus("Spróbuj jeszcze raz", "bad");
+      // pułapka (np. ruch dający pata) ma własny komunikat i dłużej zostaje na planszy
+      var pulapka = task.pulapki && task.pulapki[answer];
+      flashStatus(pulapka || "Spróbuj jeszcze raz", "bad");
       showHintButtonIfNeeded();
+      // na czas dłuższego komunikatu plansza stoi — inaczej szybki drugi tap
+      // ruszałby bierkę, zanim hetman wróci na miejsce
+      if(pulapka) locked = true;
       setTimeout(function(){
         if(fromSq && toSq){ board.revertMove(fromSq, toSq); }
         board.unhighlight(toSq,"bad");
         statusLine.textContent = "";
-      }, 550);
+        if(pulapka) locked = false;
+      }, pulapka ? 2200 : 550);
     }
   }
 }
@@ -1128,7 +1233,7 @@ function showExplanation(task){
   var lastMove = task.rozwiazania[task.rozwiazania.length-1];
   var resultBoard = fenToBoard(task.fen).board;
   var resultTurn = fenToBoard(task.fen).turn;
-  if(task.typ!=="wskaz-pole"){
+  if(task.typ!=="wskaz-pole" && task.typ!=="wybor"){
     resultBoard = applyMoveToBoard(resultBoard, lastMove);
     resultTurn = resultTurn==="w" ? "b":"w";
   }

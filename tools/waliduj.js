@@ -214,6 +214,44 @@ function jestZwiazana(fen, pole) {
   return false;
 }
 
+/* ---------- faza 8: roszada, bicie w przelocie, pat ---------- */
+
+/** legalne roszady (UCI króla, np. e1g1) */
+function roszady(fen) {
+  return new Chess(fen).moves({ verbose: true })
+    .filter((m) => m.flags.includes("k") || m.flags.includes("q")).map(uci);
+}
+
+/** legalne bicia w przelocie */
+function wPrzelocie(fen) {
+  return new Chess(fen).moves({ verbose: true }).filter((m) => m.flags.includes("e")).map(uci);
+}
+
+/** pytanie tak/nie: czy strona na ruchu może teraz zrobić roszadę */
+function czyRoszada(fen) {
+  return [roszady(fen).length ? "tak" : "nie"];
+}
+
+/** pytanie wyboru: stan pozycji dla strony na ruchu */
+function matPatSzach(fen) {
+  const c = new Chess(fen);
+  if (c.isCheckmate()) return ["mat"];
+  if (c.isStalemate()) return ["pat"];
+  if (c.isCheck()) return ["szach"];
+  return ["nic"];
+}
+
+/** ruchy, po których przeciwnik ma pata */
+function ruchyDajacePata(fen) {
+  const c = new Chess(fen);
+  return c.moves({ verbose: true }).filter((m) => {
+    c.move(m);
+    const pat = c.isStalemate();
+    c.undo();
+    return pat;
+  }).map(uci);
+}
+
 /* ---------- właściwa walidacja ---------- */
 
 const SILNIK = {
@@ -225,6 +263,10 @@ const SILNIK = {
   "daj-szacha": szachyBezpieczne,
   "widelec": widelce,
   "zwiazanie": polaZwiazane,
+  "roszada": roszady,
+  "w-przelocie": wPrzelocie,
+  "czy-roszada": czyRoszada,
+  "mat-pat-szach": matPatSzach,
 };
 
 function walidujZadanie(z) {
@@ -248,13 +290,39 @@ function walidujZadanie(z) {
   const bierki = z.fen.split(" ")[0].replace(/[^a-zA-Z]/g, "").length;
   if (bierki > 7) ostrzezenia.push(`${bierki} bierek na planszy (dla 6-latka zalecane <= 7)`);
 
+  // 3b. pytania wyboru: każda odpowiedź z rozwiazania musi być przyciskiem
+  if (z.typ === "wybor") {
+    const ids = (z.odpowiedzi || []).map((o) => o.id);
+    if (ids.length < 2) bledy.push("typ wybor wymaga >= 2 odpowiedzi w polu odpowiedzi");
+    for (const r of z.rozwiazania || []) if (!ids.includes(r)) bledy.push(`rozwiazanie "${r}" nie ma przycisku w odpowiedzi`);
+  }
+
+  // 3c. pulapki = ruchy z osobnym komunikatem; dziś tylko „to pat", więc każdy musi dawać pata
+  if (z.pulapki) {
+    const paty = ruchyDajacePata(z.fen);
+    for (const r of Object.keys(z.pulapki)) {
+      if (!paty.includes(r)) bledy.push(`pulapka "${r}" nie daje pata`);
+      if ((z.rozwiazania || []).includes(r)) bledy.push(`pulapka "${r}" jest jednoczesnie rozwiazaniem`);
+    }
+    const brak = paty.filter((r) => !(r in z.pulapki));
+    if (brak.length) bledy.push(`ruchy dajace pata bez komunikatu w pulapki: ${brak.join(", ")}`);
+  }
+
+  // 3d. ostatniRuch: musi pasować do pola przelotu z FEN
+  if (z.ostatniRuch) {
+    const ep = z.fen.split(" ")[3];
+    const r = z.ostatniRuch;
+    const ok = ep !== "-" && r[0] === ep[0] && r[2] === ep[0] && Math.abs(+r[1] - +r[3]) === 2 && c.get(r.slice(2, 4));
+    if (!ok) bledy.push(`ostatniRuch "${r}" nie zgadza sie z polem przelotu "${ep}"`);
+  }
+
   if (bledy.length) return { bledy, ostrzezenia };
 
   // 4. porownanie z silnikiem
   const silnik = SILNIK[z.motyw];
   if (!silnik) {
     ostrzezenia.push(`brak walidatora dla motywu "${z.motyw}" — sprawdzam tylko legalnosc`);
-    if (z.typ !== "wskaz-pole") {
+    if (z.typ !== "wskaz-pole" && z.typ !== "wybor") {
       for (const r of z.rozwiazania) {
         const legalne = wszystkieLegalne(z.fen);
         if (!legalne.includes(r)) bledy.push(`ruch "${r}" jest NIELEGALNY w tej pozycji`);
@@ -364,4 +432,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { matyW1, wszystkieLegalne, biciaWiszacych, widelce, polaZwiazane, szachyBezpieczne, ratunki, maBicieNaMaterial, walidujZadanie, atakujeZPola, WARTOSC };
+module.exports = { roszady, wPrzelocie, czyRoszada, matPatSzach, ruchyDajacePata, matyW1, wszystkieLegalne, biciaWiszacych, widelce, polaZwiazane, szachyBezpieczne, ratunki, maBicieNaMaterial, walidujZadanie, atakujeZPola, WARTOSC };
