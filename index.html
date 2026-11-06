@@ -1214,10 +1214,14 @@ function openTask(taskId, session){
       var pulapka = task.pulapki && task.pulapki[answer];
       flashStatus(pulapka || "Spróbuj jeszcze raz", "bad");
       showHintButtonIfNeeded();
+      // na czas dłuższego komunikatu plansza stoi — inaczej szybki drugi tap
+      // ruszałby bierkę, zanim hetman wróci na miejsce
+      if(pulapka) locked = true;
       setTimeout(function(){
         if(fromSq && toSq){ board.revertMove(fromSq, toSq); }
         board.unhighlight(toSq,"bad");
         statusLine.textContent = "";
+        if(pulapka) locked = false;
       }, pulapka ? 2200 : 550);
     }
   }
