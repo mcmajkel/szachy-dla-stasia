@@ -64,7 +64,7 @@ Szczegóły, decyzje i historia zmian: [SPEC-LOGOWANIE.md](SPEC-LOGOWANIE.md).
 
 ## 📚 Zadania
 
-**432 zadania** w paczkach w katalogu `zadania/`. Rozwiązania liczy silnik (`chess.js`) w `tools/generuj.js`, a `tools/waliduj.js` sprawdza je ponownie: obecnie 0 błędów i 2 ostrzeżenia (`f2-02` — dla tego motywu sprawdzana jest tylko legalność; `f3-01` — 10 bierek na planszy, zalecane ≤ 7).
+**508 zadań** w paczkach w katalogu `zadania/`. Rozwiązania liczy silnik (`chess.js`) w `tools/generuj.js` (fazy 1–7) i `tools/generuj-faza8.js` (faza 8), a `tools/waliduj.js` sprawdza je ponownie: obecnie 0 błędów i 2 ostrzeżenia (`f2-02` — dla tego motywu sprawdzana jest tylko legalność; `f3-01` — 10 bierek na planszy, zalecane ≤ 7).
 
 Kolejność faz idzie za **Krokiem 1 metody Stappenmethode** — mat celowo nie jest pierwszy, bo metoda stawia go dopiero jako lekcję 7, po biciu i obronie:
 
@@ -77,9 +77,11 @@ Kolejność faz idzie za **Krokiem 1 metody Stappenmethode** — mat celowo nie 
 | 5. Co się opłaca | 10 | 51 |
 | 6. Podwójny atak | 11 | 50 |
 | 7. Maty techniczne | 13 | 52 |
-| 8. Pełne zasady | 9, 12, 14 | brak zadań (w aplikacji „wkrótce nowe zadania") |
+| 8. Pełne zasady | 9, 12, 14 | 76 |
 
-Każde zadanie ma `poziom` 1–3 (167 / 164 / 101). Aplikacja podnosi poziom w fazie dopiero, gdy dziecko opanuje obecny (≥ 6 rozwiązanych i ≥ 80% z nich za pierwszym razem bez podpowiedzi) albo rozwiąże wszystkie zadania z tego poziomu.
+Faza 8 to trzy zasady, których wcześniej nie było: **roszada** (zrób ją; w którą stronę wolno; „czy wolno?" tak/nie), **bicie w przelocie** (skok czarnego piona jest podświetlony na planszy) i **pat** („Mat, pat czy szach?" przyciskami oraz „Zamatuj — uważaj na pata!", gdzie ruch dający pata dostaje osobny komunikat). Roszadę robi się tapnięciem króla, a potem wieży albo pola docelowego.
+
+Każde zadanie ma `poziom` 1–3 (197 / 192 / 119). Aplikacja podnosi poziom w fazie dopiero, gdy dziecko opanuje obecny (≥ 6 rozwiązanych i ≥ 80% z nich za pierwszym razem bez podpowiedzi) albo rozwiąże wszystkie zadania z tego poziomu.
 
 Skąd taki, a nie inny dobór — [RESEARCH-I-PROGRAM.md](RESEARCH-I-PROGRAM.md).
 
@@ -89,7 +91,8 @@ Pełna specyfikacja: **[FORMAT-ZADAN.md](FORMAT-ZADAN.md)**. W skrócie:
 
 ```bash
 cd tools && npm install     # raz
-node tools/generuj.js       # tworzy paczki
+node tools/generuj.js       # tworzy paczki 01–07 OD NOWA
+node tools/generuj-faza8.js # tworzy tylko paczkę 08
 node tools/waliduj.js       # musi dać "bledow: 0"
 ```
 

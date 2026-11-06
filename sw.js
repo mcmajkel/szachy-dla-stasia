@@ -4,7 +4,7 @@
    WERSJA podbijaj, gdy zmieniasz listę PLIKI — stara pamięć zostanie wtedy wyczyszczona.
    tools/waliduj.js sprawdza, że PLIKI zgadza się z index.html i katalogiem zadania/. */
 var PREFIKS = "szachy-";
-var WERSJA = PREFIKS + "v2";
+var WERSJA = PREFIKS + "v3";
 var PLIKI = [
   "index.html",
   "manifest.json",
@@ -17,6 +17,7 @@ var PLIKI = [
   "zadania/pakiet-05-wiszace-bierki.js",
   "zadania/pakiet-06-widelce.js",
   "zadania/pakiet-07-maty-techniczne.js",
+  "zadania/pakiet-08-pelne-zasady.js",
   "scal.js",
   "figury/fantasy/bB.svg",
   "figury/fantasy/bK.svg",

@@ -58,6 +58,17 @@ Funkcja `ZADANIA_PAKIET` jest zdefiniowana w `index.html` **przed** wczytaniem p
 | `ruch` | tap figura → tap pole docelowe | ruchy UCI, np. `["a1a8"]` |
 | `znajdz-wszystkie` | jw., z licznikiem „znaleziono 2/6" | **wszystkie** poprawne ruchy |
 | `wskaz-pole` | jeden tap w pole | nazwy pól, np. `["f6"]` |
+| `wybor` | przycisk pod planszą (plansza tylko do patrzenia) | `id` poprawnej odpowiedzi, np. `["pat"]` |
+
+### Pola dodatkowe (faza 8)
+
+| Pole | Do czego | Przykład |
+|---|---|---|
+| `odpowiedzi` | przyciski dla `typ: "wybor"` | `[{"id":"mat","tekst":"Mat 🏆"},{"id":"pat","tekst":"Pat 🤝"}]` |
+| `ostatniRuch` | podświetla ostatni ruch przeciwnika (np. skok piona przed biciem w przelocie); musi zgadzać się z polem przelotu w FEN | `"d7d5"` |
+| `pulapki` | zły ruch z własnym komunikatem zamiast „Spróbuj jeszcze raz"; dziś tylko ruchy dające pata | `{"e4f3":"To pat — remis! 🤝 ..."}` |
+
+Roszadę zapisuje się ruchem króla (`e1g1`, `e1c1`). Aplikacja przyjmuje też „król, potem wieża" (`e1h1`) i sama zamienia to na roszadę — ale tylko w pozycjach z prawem do roszady w FEN.
 
 ### Poziomy trudności
 
@@ -101,6 +112,10 @@ Walidator ostrzega też, gdy na planszy jest więcej niż 7 bierek — badania n
 | `wiszaca-bierka` | bicia bierki, której nikt nie broni |
 | `widelec` | ruchy atakujące ≥ 2 cenne bierki naraz |
 | `zwiazanie` | pola z bierkami związanymi |
+| `roszada` | wszystkie legalne roszady |
+| `w-przelocie` | wszystkie legalne bicia w przelocie |
+| `czy-roszada` | `tak` / `nie` — czy strona na ruchu może zrobić roszadę |
+| `mat-pat-szach` | `mat` / `pat` / `szach` / `nic` — stan pozycji dla strony na ruchu |
 
 Motyw spoza tej listy = walidator sprawdzi tylko, czy ruchy są legalne, i powie o tym wprost. Nowy motyw dopisujesz w `tools/waliduj.js` w tablicy `SILNIK`.
 
@@ -133,4 +148,4 @@ Kolejność nie ma znaczenia — aplikacja i tak sortuje zadania po fazie i pozi
 
 - **Zadań wielotchodowych** (mat w 2+). Aplikacja sprawdza pojedynczy ruch; przeciwnik nie odpowiada. Mat w 2 wymagałby silnika w przeglądarce — patrz uwaga o `chess.js` w README.
 - **Promocji pionka w zapisie.** Aplikacja skleja UCI z czterech znaków (`e7e8`) i sama promuje na hetmana. Zadania na niedopromowanie nie zadziałają.
-- **Roszady i bicia w przelocie** w `rozwiazania` — generator ich nie produkuje, bo pozycje startowe nie mają praw do roszady.
+- **Roszady i bicia w przelocie w fazach 1–7** — `generuj.js` nie daje praw do roszady ani pola przelotu. Te zasady ćwiczy wyłącznie faza 8 (`tools/generuj-faza8.js`).

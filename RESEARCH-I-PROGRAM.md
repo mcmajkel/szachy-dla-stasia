@@ -60,7 +60,7 @@ To gotowy rytuał do powtarzania przy prawdziwej szachownicy — i naturalny kie
 
 ### 2.1 Fazy = kolejność lekcji metody
 
-**432 zadania**, wszystkie sprawdzone silnikiem. Numeracja faz odpowiada lekcjom Kroku 1:
+**508 zadań**, wszystkie sprawdzone silnikiem. Numeracja faz odpowiada lekcjom Kroku 1:
 
 | Faza | Nazwa | Lekcja | Zadań | Czego uczy |
 |---|---|---|---|---|
@@ -71,7 +71,7 @@ To gotowy rytuał do powtarzania przy prawdziwej szachownicy — i naturalny kie
 | 5 | Co się opłaca | 10 | 51 | wiszące bierki, wartość materiału |
 | 6 | Podwójny atak | 11 | 50 | widelec skoczkiem |
 | 7 | Maty techniczne | 13 | 52 | schody dwiema wieżami, mat hetmanem |
-| 8 | Pełne zasady | 9, 12, 14 | 0 | roszada, remisy, bicie w przelocie — do zrobienia |
+| 8 | Pełne zasady | 9, 12, 14 | 76 | roszada, pat, bicie w przelocie |
 
 Mata jest 107 — Twój plan wymagał „minimum 100 pozycji mata w 1". Widelców 50, przy wymaganiu „20–30 na motyw".
 
@@ -98,14 +98,14 @@ Bo ręczne pisanie **już raz zawiodło**. Pierwsze zadanie ze SPEC-a (`f1-01`, 
 Przy 432 zadaniach takich dziur byłyby dziesiątki. Dlatego:
 
 - `tools/generuj.js` układa rzadkie pozycje i **wylicza rozwiązania silnikiem** (chess.js) — lista jest kompletna z definicji,
-- `tools/waliduj.js` przelicza wszystko od nowa i porównuje; obecny wynik: **432 zadania, 0 błędów**,
+- `tools/waliduj.js` przelicza wszystko od nowa i porównuje; obecny wynik: **508 zadań, 0 błędów**,
 - silnik jest tylko narzędziem autorskim — do przeglądarki trafiają gotowe dane, więc aplikacja dalej jest jednym plikiem bez zależności.
 
 Walidator przy okazji wyłapał, że oryginalne `f3-01` ma **10 bierek** — powyżej progu z §1.2. Zostawiłem je (jest z Twojego planu), ale nowe zadania takie nie są.
 
 ### 2.4 Czego świadomie nie ma i co dalej
 
-**Faza 8 (pełne zasady) jest pusta.** Roszada, bicie w przelocie i pat wymagają albo nowych typów zadań („pat czy mat?" to pytanie wyboru, nie ruch), albo silnika w przeglądarce. To naturalna następna paczka.
+**Faza 8 (pełne zasady) — zrobiona (11.2026), 76 zadań.** Bez silnika w przeglądarce: doszedł typ zadania `wybor` (przyciski zamiast ruchu — „Mat, pat czy szach?", „Czy wolno zrobić roszadę?"), a aplikacja rozpoznaje roszadę i bicie w przelocie po kształcie ruchu i rusza drugą bierkę. Poziomy: 1 — sam ruch (zrób roszadę, zbij w przelocie, rozpoznaj mat/pat/szach z hetmanem); 2 — z haczykiem (tylko jedna roszada wolna, który pion może bić w przelocie, mat z pułapką pata); 3 — kilka warunków naraz („czy wolno?" z szachem, atakowanym polem albo bierką po drodze; mat/pat/szach z wieżą i zablokowanym pionem). Remis przez powtórzenie i 50 ruchów pominięty — w zadaniu na jeden ruch nie da się go pokazać.
 
 **Pominięte lekcje 1–2 i 4.** Plansza, ruchy figur i pion — Staś to zna, więc aplikacja zaczyna od lekcji 3. Jeśli okaże się, że np. ruch gońca jeszcze kuleje, dorobienie paczki „jak chodzi ta figura" to jeden przebieg generatora.
 
