@@ -1,6 +1,6 @@
 # Spec: moduł „Debiut" — nauka otwarć
 
-Status: **plan**, nic jeszcze nie zaimplementowane (11.2026).
+Status: **plan zatwierdzony**, nic jeszcze nie zaimplementowane (11.2026). Decyzje — §9.
 
 ## TL;DR
 
@@ -76,8 +76,8 @@ Repertuar dobrany tak, żeby każdy ruch dał się wytłumaczyć jedną z 4 regu
 
 | Linia | Kolor | Ruchy | Rozgałęzienia przeciwnika (P1) |
 |---|---|---|---|
-| **Partia włoska** | białe | 1.e4 e5 2.Sf3 Sc6 3.Gc4 Gc5 4.c3 Sf6 5.d3 d6 6.O-O O-O | 3…Sf6 (dwa skoczki), 2…d6 |
-| **Partia czterech skoczków** | białe | 1.e4 e5 2.Sf3 Sc6 3.Sc3 Sf6 4.Gb5 Gb4 5.O-O O-O | 3…Gc5 |
+| **Partia czterech skoczków** (pierwsza) | białe | 1.e4 e5 2.Sf3 Sc6 3.Sc3 Sf6 4.Gb5 Gb4 5.O-O O-O | 3…Gc5 |
+| **Partia włoska** (druga) | białe | 1.e4 e5 2.Sf3 Sc6 3.Gc4 Gc5 4.c3 Sf6 5.d3 d6 6.O-O O-O | 3…Sf6 (dwa skoczki), 2…d6 |
 | **Na 1.e4: e5 + skoczki** | czarne | 1.e4 e5 2.Sf3 Sc6 3.Gc4 Gc5 / 3.d4 exd4 4.Sxd4 Sf6 | 3.Gc4 / 3.d4 / 3.Gb5 |
 | **Na 1.d4: d5, Sf6, e6, Ge7, O-O** | czarne | 1.d4 d5 2.c4 e6 3.Sc3 Sf6 4.Gg5 Ge7 5.e3 O-O | 2.Gf4 (system londyński): 2…Sf6 3.e3 e6 4.Sf3 Ge7 |
 
@@ -122,7 +122,7 @@ Generator: rozgrywa w chess.js pierwsze ruchy z listy typowych ruchów debiutowy
 |---|---|---|
 | `index.html` | nowy typ `linia`: stan kroku, automatyczna odpowiedź przeciwnika (z opóźnieniem ok. 600 ms i podświetleniem `ostatniRuch`), strzałka C2, losowanie gałęzi C4 | **duża**: główna praca |
 | `index.html` | pola `oceny` i `alternatywy` (ruch zaliczony, inny komunikat); oba obok istniejących `pulapki` | mała |
-| `index.html` | `FAZY` 9–13 z grupą „Debiut ♞”; odblokowanie fazy 9 po fazie 8 albo ręcznie przez rodzica | mała |
+| `index.html` | `FAZY` 9–13 z grupą „Debiut ♞”; blok B (faza 10) odblokowany po fazie 4, pozostałe bloki po fazie 8 albo ręcznie przez rodzica | mała |
 | `index.html` | **przyciemnianie bierek** spoza strefy zadania (`strefa: ["c4","f7","h5",...]`) | średnia |
 | `index.html` | porcja dnia w module: 1 linia (powtórka najdawniej ćwiczonej) + 4 zadania z bieżącej fazy | mała |
 | `tools/generuj-debiut.js` | nowy generator paczek 09–13 (osobny plik, tak jak faza 8, żeby nie ruszać id 01–07) | średnia |
@@ -171,11 +171,15 @@ Format `linia` (propozycja):
 4. **Blok D**: generator z ręcznym przeglądem.
 5. Blok E (P2).
 
-## 9. Pytania otwarte
+## 9. Decyzje (23.11.2026)
 
-- **Kiedy odblokować?** Plan zakłada start po fazie 8, zgodnie z Krokiem 2 metody. Blok B (obrona przed matem szewskim) przydałby się jednak wcześniej, jeśli Staś już gra partie. Można go odblokować po fazie 4 (mat w 1).
-- **Repertuar białymi:** włoska czy czterech skoczków? Czterech skoczków jest prostsza (symetryczna, sama reguła rozwoju); włoska uczy celowania w f7. Propozycja: obie, włoska jako druga.
-- **32 bierki:** czy przyciemnianie wystarczy, czy na poziomie 1 zostawić tylko mini-debiuty? Do sprawdzenia na Stasiu po bloku A.
+| Pytanie | Decyzja | Konsekwencja w planie |
+|---|---|---|
+| Kiedy odblokować? | **Blok B po fazie 4** (mat w 1); bloki A, C, D po fazie 8 | B nie zależy od roszady; tylko B3 (obrona z tempem) używa pozycji z prawem do roszady, bez wymagania jej ruchu |
+| Repertuar białymi | **Najpierw czterech skoczków, potem włoska** | czterech skoczków jest symetryczna i opiera się tylko na regule rozwoju; włoska dochodzi jako druga linia (celowanie w f7) |
+| 32 bierki | **Oba sposoby:** poziom 1 = mini-debiuty z okrojonym materiałem, od poziomu 2 pełna plansza z przyciemnianiem bierek spoza `strefa` | do sprawdzenia na Stasiu po bloku A; jeśli przyciemnianie nie wystarczy, mini-debiuty także na poziomie 2 |
+
+Otwarte: treść lekcji „3+ The opening” (Krok 2, Plus) — przeczytać przed implementacją bloku A.
 
 ## Źródła
 
