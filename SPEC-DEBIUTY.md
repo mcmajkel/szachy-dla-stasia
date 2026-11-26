@@ -18,12 +18,17 @@ Staś po fazie 8 zna wszystkie zasady i podstawową taktykę, ale partię zaczyn
 
 | Ustalenie | Źródło | Status | Wniosek dla modułu |
 |---|---|---|---|
-| Stappenmethode uczy debiutu dopiero w **Kroku 2**, w zeszycie *Plus*, lekcja „3+ The opening” | wynik wyszukiwania na stappenmethode.nl (podręcznik trenera Kroku 2) | ⚠️ **nieprzeczytane w całości**, bo strona nie otwiera się z tego środowiska | moduł idzie **po fazie 8**, a nie przed nią |
+| Stappenmethode uczy debiutu w **Kroku 2**, zeszyt *Plus*, lekcja „3+: The opening” (s. 169 podręcznika) | spis treści podręcznika trenera Kroku 2 (próbka PDF, s. 2) | ✅ tytuł i miejsce potwierdzone; ⚠️ **treści lekcji nie ma w próbce** | moduł idzie **po fazie 8**, a nie przed nią |
+| W podstawowym Kroku 2 jest lekcja „6: The 3 golden rules” (s. 97) | jw. | ✅ tytuł; ⚠️ treści nie ma w próbce, więc **nie wiadomo, czy to zasady debiutu** | do sprawdzenia w pełnym podręczniku; jeśli tak, trzy reguły z metody zastępują nasze cztery |
+| Krok 2 ma sens dopiero, gdy dziecko **stosuje Krok 1 w partiach**: „As long as the students are giving away a lot of pieces in their games, it is advisable to make a halt” | próbka, s. 5 | ✅ cytat | blok A, C, D odblokowany po fazie 8 **i** po tym, jak rodzic potwierdzi, że Staś nie oddaje już bierek w partiach (przełącznik w panelu rodzica) |
+| Powtórki „preferably not with the same positions, because you have to think when solving, not recall the solution from memory” | próbka, s. 153 | ✅ cytat | powtórka w blokach A, B, D losuje **inne zadanie z tym samym motywem**, nie to samo; wyjątek: linie z bloku C, które z natury są pamięciowe |
+| Zadania mieszane „most closely resemble an actual game”, ale są trudne dla prawie wszystkich dzieci na tym etapie | próbka, s. 154 | ✅ cytat | blok D (ukarz błąd) idzie ostatni i bez podanego motywu dopiero na poziomie 3 |
+| Nauka to nie tylko zeszyt: instrukcja, ćwiczenia, **granie** i **omawianie partii** | próbka, s. 7 | ✅ | metryki §7 opierają się na partiach notowanych przez rodzica, a nie tylko na wyniku w aplikacji |
 | Rdzeń zasad debiutu to kontrola środka, szybki rozwój i wczesna roszada | chess.com „Principles of the Opening”, Fine (streszczenie na lichess), blogi trenerów | zbieżne w kilku źródłach, ale to blogi, nie badania | blok A = 4 reguły, każda z własną ikoną |
 | Rozumieć zasady, a nie wkuwać warianty; konkretne linie dopiero jako przykłady | blog trenera na lichess, chessgaja | opinia trenerów | linie dopiero w bloku C, krótkie, i każdy ruch ma swoje „dlaczego” |
 | 6-latek: mało bierek, mało tekstu, 5–10 minut sesji | RESEARCH-I-PROGRAM.md §1.1–1.4 | już przyjęte w projekcie | porcja to 1 linia + 4 zadania; ikony zamiast zdań |
 
-Do zrobienia przed implementacją: **przeczytać lekcję 3+ z podręcznika Kroku 2** (PDF z linku w Źródłach) i porównać kolejność reguł oraz typy ćwiczeń z tym planem.
+Do zrobienia przed implementacją bloku A: **przeczytać s. 97–105 (lekcja 6) i 169–175 (lekcja 3+) z pełnego podręcznika Kroku 2.** Próbka PDF (17 stron) ich nie zawiera.
 
 ## 3. Cele i poza zakresem
 
@@ -179,11 +184,11 @@ Format `linia` (propozycja):
 | Repertuar białymi | **Najpierw czterech skoczków, potem włoska** | czterech skoczków jest symetryczna i opiera się tylko na regule rozwoju; włoska dochodzi jako druga linia (celowanie w f7) |
 | 32 bierki | **Oba sposoby:** poziom 1 = mini-debiuty z okrojonym materiałem, od poziomu 2 pełna plansza z przyciemnianiem bierek spoza `strefa` | do sprawdzenia na Stasiu po bloku A; jeśli przyciemnianie nie wystarczy, mini-debiuty także na poziomie 2 |
 
-Otwarte: treść lekcji „3+ The opening” (Krok 2, Plus) — przeczytać przed implementacją bloku A.
+Otwarte: treść lekcji 6 „The 3 golden rules” i 3+ „The opening” — próbka PDF ich nie zawiera (sprawdzone 26.11.2026), potrzebny pełny podręcznik.
 
 ## Źródła
 
-- [Stappenmethode — podręcznik trenera Krok 2 (opis)](https://www.stappenmethode.nl/en/material/step2/handleiding-stap-2/) i [próbka PDF](https://www.stappenmethode.nl/lesmateriaal/samples/en_lp_h2.pdf): lekcja „3+ The opening” w zeszycie Plus (z wyników wyszukiwania; treść lekcji **niezweryfikowana**)
+- [Stappenmethode — podręcznik trenera Krok 2 (opis)](https://www.stappenmethode.nl/en/material/step2/handleiding-stap-2/) i [próbka PDF](https://www.stappenmethode.nl/lesmateriaal/samples/en_lp_h2.pdf), przeczytana 26.11.2026: spis treści (s. 2), „The second Step” (s. 5–7), lekcja 7 (s. 106–110), „Additional workbooks” (s. 152–155), „Thinking ahead” (s. 221–222). Lekcji 6 i 3+ w próbce nie ma.
 - [Stappenmethode — Krok 2](https://www.stappenmethode.nl/en/step2.php)
 - [chess.com — The Principles of the Opening](https://www.chess.com/article/the-principles-of-the-opening)
 - [lichess — Reuben Fine, Ideas Behind the Chess Openings: general principles](https://lichess.org/@/DIAChessClubStudies/blog/ideas-behind-the-chess-openings-by-reuben-fine-general-principles/t7trPiGw)
